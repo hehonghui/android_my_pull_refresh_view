@@ -67,7 +67,8 @@ public class PullRefreshListView extends PullRefreshBase<ListView> {
         if (firstChild == null) {
             return true;
         }
-        Log.d(VIEW_LOG_TAG, "### isTop : " + mContentView.getTop() + ", first child : "
+        Log.d(VIEW_LOG_TAG, "### isTop, mContentView.getTop() = " + mContentView.getTop()
+                + ", first child : "
                 + firstChild.getTop());
         return mContentView.getFirstVisiblePosition() == 0 && firstChild != null
                 && (firstChild.getTop() >= mContentView.getTop());
