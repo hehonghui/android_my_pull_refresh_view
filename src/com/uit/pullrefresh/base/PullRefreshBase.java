@@ -237,35 +237,22 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
 
-        Log.d(VIEW_LOG_TAG, "@@@ onInterceptTouchEvent : action = " + ev.getAction());
-        // Log.d(VIEW_LOG_TAG, "### status : " + (mCurrentStatus ==
-        // STATUS_IDLE));
-        // if (isTop() && ev.getAction() == MotionEvent.ACTION_DOWN) {
-        // Log.d(VIEW_LOG_TAG, "### 拦截事件");
-        // return true;
-        // }
-        //
-        // return false;
-
         /*
          * This method JUST determines whether we want to intercept the motion.
          * If we return true, onTouchEvent will be called and we do the actual
          * scrolling there.
          */
-
         final int action = MotionEventCompat.getActionMasked(ev);
         // Always handle the case of the touch gesture being complete.
         if (action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP) {
-            // Release the scroll.
-            // mIsScrolling = false;
-            return false; // Do not intercept touch event, let the child handle
-                          // it
+            // Do not intercept touch event, let the child handle it
+            return false;
         }
 
         switch (action) {
             case MotionEvent.ACTION_MOVE:
-                Log.d("", "@# ACTION_MOVE");
                 int yDistance = (int) ev.getRawY() - mYDown;
+                // 如果拉到了顶部, 并且是下拉,则拦截触摸事件,从而转到onTouchEvent来处理下拉刷新事件
                 if (isTop() && yDistance > 0) {
                     return true;
                 }
@@ -276,9 +263,26 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
                 break;
         }
 
-        // In general, we don't want to intercept touch events. They should be
-        // handled by the child view.
+        // Do not intercept touch event, let the child handle it
         return false;
+    }
+
+    /**
+     * @param status
+     */
+    private void showStatus(int status) {
+        String statusString = "";
+        if (status == STATUS_IDLE) {
+            statusString = "idle";
+        } else if (status == STATUS_PULL_TO_REFRESH) {
+            statusString = "pull to refresh";
+        } else if (status == STATUS_RELEASE_TO_REFRESH) {
+            statusString = "release to refresh";
+        }
+        else if (status == STATUS_REFRESHING) {
+            statusString = "refreshing";
+        }
+        Log.d(VIEW_LOG_TAG, "### status = " + statusString);
     }
 
     /*
@@ -294,9 +298,6 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
             case MotionEvent.ACTION_DOWN:
                 mYDown = (int) event.getRawY();
                 Log.d(VIEW_LOG_TAG, "#### ACTION_DOWN");
-                // if (isTop()) {
-                // return true;
-                // }
                 break;
 
             case MotionEvent.ACTION_MOVE:
@@ -304,22 +305,19 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
                 int currentY = (int) event.getRawY();
                 mYDistance = currentY - mYDown;
 
-                Log.d(VIEW_LOG_TAG, "### touch slop = " + mTouchSlop + ", distance = " +
-                        mYDistance
-                        + ", status = " + mCurrentStatus);
-
-                if (mYDistance <= 0 || mYDistance < mTouchSlop) {
-                    return false;
-                }
-
-                if (mYDistance >= mTouchSlop && mCurrentStatus != STATUS_REFRESHING) {
-                    if (mHeaderView.getPaddingTop() > 0) {
-                        mCurrentStatus = STATUS_RELEASE_TO_REFRESH;
-                    } else {
-                        mCurrentStatus = STATUS_PULL_TO_REFRESH;
+                Log.d(VIEW_LOG_TAG, "### touch slop = " + mTouchSlop + ", distance = " + mYDistance);
+                showStatus(mCurrentStatus);
+                //
+                if (mCurrentStatus != STATUS_REFRESHING) {
+                    //
+                    if (mYDistance > mTouchSlop) {
+                        // 高度大于header view的高度才可以刷新
+                        if (mHeaderView.getPaddingTop() > mHeaderViewHeight) {
+                            mCurrentStatus = STATUS_RELEASE_TO_REFRESH;
+                        } else {
+                            mCurrentStatus = STATUS_PULL_TO_REFRESH;
+                        }
                     }
-                    // adjustViewPadding(mHeaderView, mYDistance / 2 -
-                    // mHeaderViewHeight);
                     adjustPadding(mYDistance);
                 }
                 break;
@@ -327,17 +325,12 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
             case MotionEvent.ACTION_UP:
                 // 下拉刷新的具体操作
                 doRefresh();
+                mCurrentStatus = STATUS_IDLE;
                 break;
             default:
                 break;
 
         }
-
-        // Log.d(VIEW_LOG_TAG, "### before : super.onTouchEvent ");
-        // if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH
-        // || mCurrentStatus == STATUS_PULL_TO_REFRESH) {
-        // return true;
-        // }
 
         Log.d(VIEW_LOG_TAG, "### before : super.onTouchEvent ");
         return true;
@@ -347,14 +340,14 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
      * 
      */
     private final void doRefresh() {
-        Log.d(VIEW_LOG_TAG, "### mOriginHeadPadding : " + mOriginHeadPadding);
         if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH) {
             mCurrentStatus = STATUS_REFRESHING;
             mPullRefreshListener.onRefresh();
-            adjustPadding(0);
-        } else if (mCurrentStatus == STATUS_PULL_TO_REFRESH) {
+            // 使headview 正常显示, 直到调用了refreshComplete后再隐藏
+            adjustPadding(mHeaderViewHeight);
+        } else {
             // 隐藏header view
-
+            adjustPadding(-mHeaderViewHeight);
         }
     }
 
