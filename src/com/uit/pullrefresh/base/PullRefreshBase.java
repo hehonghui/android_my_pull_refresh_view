@@ -33,6 +33,7 @@
 package com.uit.pullrefresh.base;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -42,7 +43,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.uit.pullrefresh.R;
 import com.uit.pullrefresh.listener.OnLoadMoreListener;
@@ -62,7 +63,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
     /**
      * 
      */
-    protected View mHeaderView;
+    protected ViewGroup mHeaderView;
 
     /**
      * 
@@ -85,31 +86,26 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
     /**
      * 
      */
-    protected int mHeaderViewHeight = 0;
+    protected int mHeaderViewHeight;
 
     /**
      * 空闲状态
      */
-    public static final int STATUS_IDLE = 1;
+    public static final int STATUS_IDLE = 0;
 
     /**
      * 下拉或者上拉状态
      */
-    public static final int STATUS_PULLING = 2;
+    public static final int STATUS_PULL_TO_REFRESH = 1;
 
     /**
      * 下拉或者上拉状态
      */
-    public static final int STATUS_PULL_TO_REFRESH = 3;
-
-    /**
-     * 下拉或者上拉状态
-     */
-    public static final int STATUS_RELEASE_TO_REFRESH = 4;
+    public static final int STATUS_RELEASE_TO_REFRESH = 2;
     /**
      * 刷新中
      */
-    public static final int STATUS_REFRESHING = 5;
+    public static final int STATUS_REFRESHING = 3;
     /**
      * 当前状态
      */
@@ -118,10 +114,21 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
      * 
      */
     protected MarginLayoutParams mHeaderLayoutParams;
+
+    /**
+     * 
+     */
+    protected int mYDistance = 0;
+    /**
+     * 
+     */
+    protected int mTouchSlop = 0;
     /**
      * 触摸事件按下的y坐标
      */
     protected int mYDown = 0;
+
+    protected int mOriginHeadPadding;
 
     /**
      * @param context
@@ -146,9 +153,11 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
     /**
      * 
      */
-    protected void initLayout(Context context) {
+    protected final void initLayout(Context context) {
         //
-        mHeaderView = mInflater.inflate(R.layout.umeng_comm_pull_to_refresh_header, null);
+        mHeaderView = (ViewGroup) mInflater.inflate(R.layout.umeng_comm_pull_to_refresh_header,
+                null);
+        mHeaderView.setBackgroundColor(Color.RED);
         // measureView(mHeaderView);
 
         // add header view to parent
@@ -157,12 +166,12 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
         initContentView();
         setContentView(mContentView);
 
-        //
-        ProgressBar footer = new ProgressBar(context);
-        footer.setIndeterminate(true);
-        mFooterView = footer;
-        // mFooterView.setVisibility(View.GONE);
-        this.addView(mFooterView, 2);
+        // //
+        // ProgressBar footer = new ProgressBar(context);
+        // footer.setIndeterminate(true);
+        // mFooterView = footer;
+        // // mFooterView.setVisibility(View.GONE);
+        // this.addView(mFooterView, 2);
 
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
     }
@@ -176,6 +185,12 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
             // hide header view
             mHeaderLayoutParams = (MarginLayoutParams) mHeaderView.getLayoutParams();
             mHeaderLayoutParams.topMargin = -mHeaderViewHeight;
+            mOriginHeadPadding = mHeaderView.getPaddingTop();
+            adjustPadding(-mHeaderViewHeight);
+            // mHeaderView.setPadding(mHeaderView.getPaddingLeft(),
+            // -mHeaderViewHeight, mHeaderView.getPaddingRight(),
+            // mHeaderView.getPaddingBottom());
+
         }
     }
 
@@ -219,56 +234,81 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
         return mContentView;
     }
 
-    /**
-     * @param view
-     */
-    public void setHeaderView(View view) {
-        mHeaderView = view;
-    }
-
-    /**
-     * @param view
-     */
-    public void setHeaderView(int layout) {
-        mHeaderView = mInflater.inflate(layout, null);
-    }
-
-    /**
-     * @param view
-     */
-    public void setFooterView(View view) {
-        mFooterView = view;
-    }
-
-    /**
-     * @param view
-     */
-    public void setFooterView(int layout) {
-        mFooterView = mInflater.inflate(layout, null);
-    }
-
-    protected int mYDistance = 0;
-    protected int mTouchSlop = 0;
-
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
 
-        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
-            mYDown = (int) ev.getRawY();
-        }
-        // 是否到了最上面的一个view, 即判断是否可以下拉刷新, 拦截事件
-        if (isTop()) {
-            Log.d(VIEW_LOG_TAG, "### 拦截视图 ");
-            return true;
-        }
+        Log.d(VIEW_LOG_TAG, "### status : " + (mCurrentStatus == STATUS_IDLE));
+        // if (isTop() || mCurrentStatus != STATUS_IDLE) {
+        // Log.d(VIEW_LOG_TAG, "### 拦截事件");
+        // return true;
+        // }
 
-        if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH || mCurrentStatus == STATUS_PULL_TO_REFRESH) {
-            return true;
-        }
+        return preTouchEvent(ev);
+        // return false ;
+    }
 
-        // return super.onInterceptTouchEvent(ev);
+    /**
+     * @param event
+     */
+    protected boolean preTouchEvent(MotionEvent event) {
+        // /**
+        // * public static final int ACTION_DOWN = 0; public static final int
+        // * ACTION_UP = 1; public static final int ACTION_MOVE = 2;
+        // */
+        // Log.d(VIEW_LOG_TAG, "preTouchEvent : " + event.getAction());
+        // switch (event.getAction()) {
+        // case MotionEvent.ACTION_DOWN:
+        // mYDown = (int) event.getRawY();
+        // Log.d(VIEW_LOG_TAG, "#### ACTION_DOWN");
+        // break;
+        //
+        // case MotionEvent.ACTION_MOVE:
+        // Log.d(VIEW_LOG_TAG, "#### ACTION_MOVE");
+        // int currentY = (int) event.getRawY();
+        // mYDistance = currentY - mYDown;
+        //
+        // Log.d(VIEW_LOG_TAG, "### touch slop = " + mTouchSlop +
+        // ", distance = " + mYDistance
+        // + ", status = " + mCurrentStatus);
+        //
+        // if (mYDistance <= 0 || mYDistance < mTouchSlop) {
+        // isIntercept = false ;
+        // }
+        //
+        // if (isTop() || mCurrentStatus == STATUS_PULL_TO_REFRESH
+        // || mCurrentStatus == STATUS_RELEASE_TO_REFRESH) {
+        // Log.d(VIEW_LOG_TAG, "### 拦截事件 ACTION_MOVE");
+        // isIntercept = true ;
+        // }
+        //
+        // if (mYDistance >= mTouchSlop && mCurrentStatus != STATUS_REFRESHING)
+        // {
+        // if (mHeaderLayoutParams.topMargin > 0) {
+        // mCurrentStatus = STATUS_RELEASE_TO_REFRESH;
+        // } else {
+        // mCurrentStatus = STATUS_PULL_TO_REFRESH;
+        // }
+        //
+        // Log.d(VIEW_LOG_TAG, "### mHeaderLayoutParams.topMargin = "
+        // + mHeaderLayoutParams.topMargin);
+        // adjustViewPadding(mHeaderView, mYDistance);
+        // }
+        // break;
+        //
+        // case MotionEvent.ACTION_UP:
+        // mCurrentStatus = STATUS_IDLE;
+        // Log.d(VIEW_LOG_TAG, "#### ACTION_UP 事件");
+        // isIntercept = false;
+        // break;
+        // default:
+        // break;
+        //
+        // }
+
         return true;
     }
+
+    protected boolean isIntercept = false;
 
     /*
      * 在这里处理触摸事件以达到下拉刷新或者上拉自动加载的问题
@@ -277,11 +317,14 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
 
-        Log.d(VIEW_LOG_TAG, "#### onTouchEvent");
+        Log.d(VIEW_LOG_TAG, "#### onTouchEvent : " + event.getAction());
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mYDown = (int) event.getRawY();
                 Log.d(VIEW_LOG_TAG, "#### ACTION_DOWN");
+                if (isTop()) {
+                    return true;
+                }
                 break;
 
             case MotionEvent.ACTION_MOVE:
@@ -289,7 +332,8 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
                 int currentY = (int) event.getRawY();
                 mYDistance = currentY - mYDown;
 
-                Log.d(VIEW_LOG_TAG, "### touch slop = " + mTouchSlop + ", distance = " + mYDistance
+                Log.d(VIEW_LOG_TAG, "### touch slop = " + mTouchSlop + ", distance = " +
+                        mYDistance
                         + ", status = " + mCurrentStatus);
 
                 if (mYDistance <= 0 || mYDistance < mTouchSlop) {
@@ -297,12 +341,15 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
                 }
 
                 if (mYDistance >= mTouchSlop && mCurrentStatus != STATUS_REFRESHING) {
-                    if (mHeaderLayoutParams.topMargin > 0) {
+                    if (mHeaderView.getPaddingTop() > 0) {
                         mCurrentStatus = STATUS_RELEASE_TO_REFRESH;
                     } else {
                         mCurrentStatus = STATUS_PULL_TO_REFRESH;
                     }
-                    adjustViewPadding(mHeaderView, mYDistance / 2 - mHeaderViewHeight);
+                    // adjustViewPadding(mHeaderView, mYDistance / 2 -
+                    // mHeaderViewHeight);
+                    adjustPadding(mYDistance);
+                    return true;
                 }
                 break;
 
@@ -315,10 +362,11 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
 
         }
 
-        if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH
-                || mCurrentStatus == STATUS_PULL_TO_REFRESH) {
-            return true;
-        }
+        Log.d(VIEW_LOG_TAG, "### before : super.onTouchEvent ");
+        // if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH
+        // || mCurrentStatus == STATUS_PULL_TO_REFRESH) {
+        // return true;
+        // }
 
         return super.onTouchEvent(event);
     }
@@ -327,10 +375,11 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
      * 
      */
     private final void doRefresh() {
-        if (mHeaderLayoutParams.topMargin > mHeaderViewHeight / 2
-                && mCurrentStatus == STATUS_RELEASE_TO_REFRESH) {
+        Log.d(VIEW_LOG_TAG, "### mOriginHeadPadding : " + mOriginHeadPadding);
+        if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH) {
             mCurrentStatus = STATUS_REFRESHING;
             mPullRefreshListener.onRefresh();
+            adjustPadding(0);
         } else if (mCurrentStatus == STATUS_PULL_TO_REFRESH) {
             // 隐藏header view
 
@@ -356,9 +405,11 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
      * 
      */
     protected void resetHeaderView() {
-        int curHeight = mHeaderLayoutParams.topMargin;
-        mHeaderLayoutParams.bottomMargin = -curHeight - mHeaderViewHeight;
-        mHeaderView.setLayoutParams(mHeaderLayoutParams);
+        // int curHeight = mHeaderLayoutParams.topMargin;
+        // mHeaderLayoutParams.topMargin = -curHeight;
+        // mHeaderView.setLayoutParams(mHeaderLayoutParams);
+
+        adjustPadding(-mHeaderViewHeight);
     }
 
     /**
@@ -382,13 +433,23 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
 
     }
 
+    private void adjustPadding(int topPadding) {
+        mHeaderView.setPadding(mHeaderView.getPaddingLeft(), topPadding,
+                mHeaderView.getPaddingRight(), mHeaderView.getPaddingBottom());
+    }
+
     /**
      * 调整Padding以实现下拉或者上拉的效果
      */
     protected void adjustViewPadding(View view, int distance) {
-        MarginLayoutParams marginLayoutParams = (MarginLayoutParams) view.getLayoutParams();
-        marginLayoutParams.bottomMargin = distance;
-        view.setLayoutParams(marginLayoutParams);
+        // MarginLayoutParams marginLayoutParams = (MarginLayoutParams)
+        // view.getLayoutParams();
+        // marginLayoutParams.topMargin = distance;
+        // view.setLayoutParams(marginLayoutParams);
+
+        adjustPadding(distance);
+
+        Log.d(VIEW_LOG_TAG, "### adjustViewPadding : view : " + view);
     }
 
     /**

@@ -64,15 +64,22 @@ public class PullRefreshListView extends PullRefreshBase<ListView> {
     @Override
     protected boolean isTop() {
         View firstChild = mContentView.getChildAt(0);
+        if (firstChild == null) {
+            return true;
+        }
         Log.d(VIEW_LOG_TAG, "### isTop : " + mContentView.getTop() + ", first child : "
                 + firstChild.getTop());
         return mContentView.getFirstVisiblePosition() == 0 && firstChild != null
-                && (firstChild.getTop() == mContentView.getTop());
+                && (firstChild.getTop() >= mContentView.getTop());
     }
 
     @Override
     protected void initContentView() {
         mContentView = new ListView(getContext());
+        int count = mContentView.getHeaderViewsCount();
+        for (int i = 0; i < count; i++) {
+            mContentView.removeHeaderView(mContentView.getChildAt(i));
+        }
         ViewGroup.LayoutParams layoutParams = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT);
         mContentView.setLayoutParams(layoutParams);
