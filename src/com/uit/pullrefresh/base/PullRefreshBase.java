@@ -309,7 +309,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
                         + ", status = " + mCurrentStatus);
 
                 if (mYDistance <= 0 || mYDistance < mTouchSlop) {
-                    isPullRefresh = false;
+                    return false;
                 }
 
                 if (mYDistance >= mTouchSlop && mCurrentStatus != STATUS_REFRESHING) {
