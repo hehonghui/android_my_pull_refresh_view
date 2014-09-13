@@ -34,9 +34,7 @@ package com.uit.pullrefresh.base.impl;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ListView;
 
 import com.uit.pullrefresh.base.PullRefreshBase;
@@ -61,45 +59,24 @@ public class PullRefreshListView extends PullRefreshBase<ListView> {
         super(context, attrs);
     }
 
+    /*
+     * 是否滑动到了顶端，如果返回true, 则表示到了顶端，用户继续下拉则触发下拉刷新
+     * @see com.uit.pullrefresh.base.PullRefreshBase#isTop()
+     */
     @Override
     protected boolean isTop() {
         View firstChild = mContentView.getChildAt(0);
         if (firstChild == null) {
             return true;
         }
-        Log.d(VIEW_LOG_TAG, "### isTop, mContentView.getTop() = " + mContentView.getTop()
-                + ", first child : "
-                + firstChild.getTop());
         return mContentView.getFirstVisiblePosition() == 0
                 && (firstChild.getTop() >= mContentView.getTop());
     }
 
-    @Override
-    protected boolean isBottom() {
-
-        if (mContentView == null || mContentView.getAdapter() == null) {
-            return false;
-        }
-        // 总数
-        int count = mContentView.getAdapter().getCount();
-        // 显示的数量
-        int activeCount = mContentView.getChildCount();
-        //
-        View lastChild = mContentView.getChildAt(activeCount - 1);
-        if (lastChild == null) {
-            return true;
-        }
-
-        Log.d(VIEW_LOG_TAG,
-                "### isBottom, mContentView.getBottom() = " + mContentView.getBottom()
-                        + ", last child getBottom: "
-                        + lastChild.getBottom() + ", last postion : "
-                        + mContentView.getLastVisiblePosition() + ", child count : " + count
-                        + ", active count : " + activeCount);
-        return mContentView.getLastVisiblePosition() == count - 1
-                && (lastChild.getBottom() <= mContentView.getBottom());
-    }
-
+    /*
+     * 下拉到listview 最后一项时则返回true, 将出发自动加载
+     * @see com.uit.pullrefresh.base.PullRefreshBase#isShowFooterView()
+     */
     @Override
     protected boolean isShowFooterView() {
         if (mContentView == null || mContentView.getAdapter() == null) {
@@ -109,19 +86,16 @@ public class PullRefreshListView extends PullRefreshBase<ListView> {
         return mContentView.getLastVisiblePosition() == mContentView.getAdapter().getCount() - 1;
     }
 
+    /*
+     * 初始化mContentView
+     * @see com.uit.pullrefresh.base.PullRefreshBase#initContentView()
+     */
     @Override
     protected void initContentView() {
+        // 初始化mContentView
         mContentView = new ListView(getContext());
-        //
+        // 设置OnScrollListener, 用以实现滑动到底部时的自动加载功能，如果不需要该功能可以不设置.
         mContentView.setOnScrollListener(this);
-        //
-        int count = mContentView.getHeaderViewsCount();
-        for (int i = 0; i < count; i++) {
-            mContentView.removeHeaderView(mContentView.getChildAt(i));
-        }
-        ViewGroup.LayoutParams layoutParams = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT);
-        mContentView.setLayoutParams(layoutParams);
     }
 
 }
