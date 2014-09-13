@@ -398,8 +398,9 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
                     }
 
                     rotateHeaderArrow();
+                    // 对滑动距离取了80%
                     int scaleHeight = (int) (mYDistance * 0.8f);
-                    // 小于屏幕高度4分之一时才下拉
+                    // 滑动的距离小于屏幕高度4分之一时才拉伸header, 否则保持不变
                     if (scaleHeight <= mScrHeight / 4) {
                         adjustHeaderPadding(scaleHeight);
                     }
@@ -416,7 +417,6 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
 
         }
 
-        Log.d(VIEW_LOG_TAG, "### before : super.onTouchEvent ");
         return true;
     }
 
@@ -425,14 +425,14 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
      */
     private final void doRefresh() {
         if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH) {
-            //
+            // 设置为正在刷新的状态
             mCurrentStatus = STATUS_REFRESHING;
             mArrowImageView.clearAnimation();
-            //
+            // 隐藏header中的箭头图标
             mArrowImageView.setVisibility(View.GONE);
-
+            // 设置header中的进度条可见
             mHeaderProgressBar.setVisibility(View.VISIBLE);
-
+            // 设置一些文本参数
             mTimeTextView.setText(R.string.pull_to_refresh_update_time_label);
             SimpleDateFormat sdf = new SimpleDateFormat();
             mTimeTextView.append(sdf.format(new Date()));
