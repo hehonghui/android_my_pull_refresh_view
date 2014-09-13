@@ -55,6 +55,9 @@ import com.uit.pullrefresh.R;
 import com.uit.pullrefresh.listener.OnLoadMoreListener;
 import com.uit.pullrefresh.listener.OnPullRefreshListener;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 /**
  * @author mrsimple
  * @param <T>
@@ -63,35 +66,35 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
         OnScrollListener {
 
     /**
-     * 
+     * 内容视图, 比如ListView, GridView等
      */
     protected T mContentView;
 
     /**
-     * 
+     * 下拉头视图,因为要修改其padding,所以类型为ViewGroup类型
      */
     protected ViewGroup mHeaderView;
 
     /**
-     * 
+     * footer视图,因为要修改其padding,所以类型为ViewGroup类型
      */
     protected ViewGroup mFooterView;
     /**
-     * 
+     * 下拉刷新监听器
      */
     protected OnPullRefreshListener mPullRefreshListener;
     /**
-     * 
+     * 滑动到底部则自动加载的监听器
      */
     protected OnLoadMoreListener mLoadMoreListener;
 
     /**
-     * 
+     * LayoutInflater
      */
     protected LayoutInflater mInflater;
 
     /**
-     * 
+     * Header 的高度
      */
     protected int mHeaderViewHeight;
 
@@ -115,30 +118,21 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     public static final int STATUS_REFRESHING = 3;
 
     /**
-     * 
+     * LOADING中
      */
-    public static final int STATUS_LOADING_VIEW_SHOW = 4;
-    /**
-     * 
-     */
-    public static final int STATUS_LOADING = 5;
+    public static final int STATUS_LOADING = 4;
+
     /**
      * 当前状态
      */
     protected int mCurrentStatus = STATUS_IDLE;
-    /**
-     * 
-     */
-    protected MarginLayoutParams mHeaderLayoutParams;
-
-    protected MarginLayoutParams mFooterLayoutParams;
 
     /**
-     * 
+     * Y轴上滑动的距离
      */
     protected int mYDistance = 0;
     /**
-     * 
+     * 滑动的距离阀值,超过这个阀值则认为是有效滑动
      */
     protected int mTouchSlop = 0;
     /**
@@ -150,13 +144,37 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
      * header view里面的进度条
      */
     protected ProgressBar mHeaderProgressBar;
-
+    /**
+     * 下拉头的箭头
+     */
     protected ImageView mArrowImageView;
-
+    /**
+     * 箭头图标是否是向上的状态
+     */
+    protected boolean isArrowUp = false;
+    /**
+     * 下拉刷新的文字TextView
+     */
     protected TextView mTipsTextView;
-
+    /**
+     * 更新时间的文字TextView
+     */
     protected TextView mTimeTextView;
-
+    /**
+     * footer view's progress bar
+     */
+    protected ProgressBar mFooterProgressBar;
+    /**
+     * footer view's text
+     */
+    protected TextView mFooterTextView;
+    /**
+     * footer view's height
+     */
+    protected int mFooterHeight;
+    /**
+     * 屏幕高度
+     */
     protected int mScrHeight = 0;
 
     /**
@@ -179,21 +197,20 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
         initLayout(context);
     }
 
-    protected int mOriginHeaderPaddingTop = 0;
-
     /**
-     * 
+     * 初始化整体布局, header view放在第一个，然后是content view 和 footer view .其中content view的
+     * 宽度和高度都为match parent .
      */
     protected final void initLayout(Context context) {
 
-        //
+        // 初始化header view
         initHeaderView();
 
-        //
+        // 初始化 content view
         initContentView();
         setContentView(mContentView);
 
-        //
+        // 初始化 footer
         initFooterView();
 
         //
@@ -204,7 +221,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     }
 
     /**
-     * 
+     * 初始化header view
      */
     protected void initHeaderView() {
         //
@@ -213,7 +230,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
         mHeaderView.setBackgroundColor(Color.RED);
 
         mHeaderProgressBar = (ProgressBar) mHeaderView.findViewById(R.id.pull_to_refresh_progress);
-        mArrowImageView = (ImageView) mHeaderView.findViewById(R.id.pull_to_refresh_image);
+        mArrowImageView = (ImageView) mHeaderView.findViewById(R.id.pull_to_arrow_image);
         mTipsTextView = (TextView) mHeaderView.findViewById(R.id.pull_to_refresh_text);
         mTimeTextView = (TextView) mHeaderView.findViewById(R.id.pull_to_refresh_updated_at);
         // add header view to parent
@@ -221,11 +238,8 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
 
     }
 
-    ProgressBar mFooterProgressBar;
-    TextView mFooterTextView;
-
     /**
-     * 
+     * 初始化footer view
      */
     protected void initFooterView() {
 
@@ -236,51 +250,28 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
         this.addView(mFooterView, 2);
     }
 
-    int footerHeight;
-
+    /*
+     * 获取header view, footer view的高度
+     * @see android.widget.LinearLayout#onLayout(boolean, int, int, int, int)
+     */
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
 
         if (changed) {
             mHeaderViewHeight = mHeaderView.getHeight();
-            // hide header view
-            mHeaderLayoutParams = (MarginLayoutParams)
-                    mHeaderView.getLayoutParams();
-            mHeaderLayoutParams.topMargin = -mHeaderViewHeight;
             // padding
             adjustHeaderPadding(-mHeaderViewHeight);
 
-            footerHeight = mFooterView.getHeight();
-            mFooterLayoutParams = (MarginLayoutParams) mFooterView
-                    .getLayoutParams();
-            adjustFooterPadding(-footerHeight);
+            mFooterHeight = mFooterView.getHeight();
+            adjustFooterPadding(-mFooterHeight);
         }
     }
 
     /**
-     * 
+     * 子类必须实现这个方法，并且在该方法中初始化mContentView字段，即你要显示的主视图.
+     * 例如PullRefreshListView的mContentView就是ListView
      */
-    protected void measureView(View child) {
-        ViewGroup.LayoutParams p = child.getLayoutParams();
-        if (p == null) {
-            p = new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-        }
-
-        int childWidthSpec = ViewGroup.getChildMeasureSpec(0,
-                0 + 0, p.width);
-        int lpHeight = p.height;
-        int childHeightSpec;
-        if (lpHeight > 0) {
-            childHeightSpec = MeasureSpec.makeMeasureSpec(lpHeight, MeasureSpec.EXACTLY);
-        } else {
-            childHeightSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
-        }
-        child.measure(childWidthSpec, childHeightSpec);
-    }
-
     protected abstract void initContentView();
 
     /**
@@ -290,6 +281,11 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
         mContentView = view;
         LinearLayout.LayoutParams lvLayoutParams = (LinearLayout.LayoutParams) mContentView
                 .getLayoutParams();
+        if (lvLayoutParams == null) {
+            lvLayoutParams = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT);
+        }
+        lvLayoutParams.bottomMargin = 0;
         lvLayoutParams.weight = 1.0f;
         mContentView.setLayoutParams(lvLayoutParams);
         this.addView(mContentView, 1);
@@ -302,6 +298,12 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
         return mContentView;
     }
 
+    /*
+     * 在适当的时候拦截触摸事件，这里指的适当的时候是当mContentView滑动到顶部，并且是下拉时拦截触摸事件，否则不拦截，交给其child
+     * view 来处理。
+     * @see
+     * android.view.ViewGroup#onInterceptTouchEvent(android.view.MotionEvent)
+     */
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
 
@@ -386,7 +388,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
                 if (mYDistance >= mTouchSlop) {
                     if (mCurrentStatus != STATUS_REFRESHING) {
                         //
-                        if (mHeaderView.getPaddingTop() > mHeaderViewHeight) {
+                        if (mHeaderView.getPaddingTop() > mHeaderViewHeight * 0.7f) {
                             mCurrentStatus = STATUS_RELEASE_TO_REFRESH;
                             mTipsTextView.setText(R.string.pull_to_refresh_release_label);
                         } else {
@@ -419,22 +421,31 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     }
 
     /**
-     * 
+     * 执行刷新操作
      */
     private final void doRefresh() {
         if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH) {
             //
             mCurrentStatus = STATUS_REFRESHING;
+            mArrowImageView.clearAnimation();
             //
             mArrowImageView.setVisibility(View.GONE);
+
             mHeaderProgressBar.setVisibility(View.VISIBLE);
-            Log.d(VIEW_LOG_TAG, "----- doRefresh") ;
-            //
-            mPullRefreshListener.onRefresh();
-            // 使headview 正常显示, 直到调用了refreshComplete后再隐藏
-            adjustHeaderPadding(mHeaderViewHeight + 20);
+
+            mTimeTextView.setText(R.string.pull_to_refresh_update_time_label);
+            SimpleDateFormat sdf = new SimpleDateFormat();
+            mTimeTextView.append(sdf.format(new Date()));
             //
             mTipsTextView.setText(R.string.pull_to_refresh_refreshing_label);
+
+            // 执行回调
+            if (mPullRefreshListener != null) {
+                mPullRefreshListener.onRefresh();
+            }
+            // 使headview 正常显示, 直到调用了refreshComplete后再隐藏
+            new HeaderViewHideTask().execute(mHeaderViewHeight);
+
         } else {
             // 隐藏header view
             adjustHeaderPadding(-mHeaderViewHeight);
@@ -442,15 +453,14 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     }
 
     /**
-     * 
+     * 下拉到底部时加载更多
      */
     private void loadmore() {
-        if (isShowFooterView() && mLoadMoreListener != null
-                && (mCurrentStatus != STATUS_REFRESHING || mCurrentStatus != STATUS_LOADING)) {
-            mCurrentStatus = STATUS_LOADING;
+        if (isShowFooterView() && mLoadMoreListener != null) {
             mFooterTextView.setText(R.string.pull_to_refresh_refreshing_label);
             mFooterProgressBar.setVisibility(View.VISIBLE);
-            adjustFooterPadding(footerHeight);
+            adjustFooterPadding(0);
+            mCurrentStatus = STATUS_LOADING;
             mLoadMoreListener.onLoadMore();
         }
     }
@@ -470,27 +480,24 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     }
 
     /**
-     * 
+     * 刷新结束，在调用完onRefresh后调用，否则header view会一直显示.
      */
     public void refreshComplete() {
         mCurrentStatus = STATUS_IDLE;
         mHeaderProgressBar.setVisibility(View.GONE);
-        mArrowImageView.setVisibility(View.VISIBLE);
-        Log.d(VIEW_LOG_TAG, "----- refreshComplete") ;
+        mArrowImageView.setVisibility(View.GONE);
         hideHeaderView();
     }
 
     /**
-     * 
+     * 隐藏header view
      */
     protected void hideHeaderView() {
-        adjustHeaderPadding(-mHeaderViewHeight);
+        new HeaderViewHideTask().execute(-mHeaderViewHeight);
     }
 
-    protected boolean isArrowUp = false;
-
     /**
-     * 
+     * 旋转箭头图标
      */
     protected void rotateHeaderArrow() {
 
@@ -502,7 +509,8 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
             return;
         }
 
-        Log.d(VIEW_LOG_TAG, "------ rotateHeaderArrow") ;
+        mArrowImageView.setVisibility(View.VISIBLE);
+        Log.d(VIEW_LOG_TAG, "------ rotateHeaderArrow");
         float pivotX = mArrowImageView.getWidth() / 2f;
         float pivotY = mArrowImageView.getHeight() / 2f;
         float fromDegrees = 0f;
@@ -528,71 +536,69 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     }
 
     /**
-     * 
+     * 隐藏footer view
      */
     protected void hideFooterView() {
-
+        adjustFooterPadding(-mFooterHeight);
     }
 
     /**
-     * 
+     * 上拉加载结束
      */
     public void loadMoreComplete() {
         mCurrentStatus = STATUS_IDLE;
         mFooterTextView.setText(R.string.pull_to_refresh_load_label);
         mFooterProgressBar.setVisibility(View.GONE);
-        adjustFooterPadding(-footerHeight);
+        // adjustFooterPadding(-mFooterHeight);
+        // hideFooterView();
+        new FooterViewTask().execute(-mFooterHeight);
     }
 
+    /**
+     * 调整header view的bottom padding
+     * 
+     * @param bottomPadding
+     */
     private void adjustFooterPadding(int bottomPadding) {
-        mFooterView.setPadding(mFooterView.getPaddingLeft(),
-                mFooterView.getPaddingTop(),
+        mFooterView.setPadding(mFooterView.getPaddingLeft(), 0,
                 mFooterView.getPaddingRight(), bottomPadding);
     }
 
+    /**
+     * 调整header view的top padding
+     * 
+     * @param topPadding
+     */
     private void adjustHeaderPadding(int topPadding) {
         mHeaderView.setPadding(mHeaderView.getPaddingLeft(), topPadding,
-                mHeaderView.getPaddingRight(), mHeaderView.getPaddingBottom());
+                mHeaderView.getPaddingRight(), 0);
     }
-
-    // /**
-    // * 调整Padding以实现下拉或者上拉的效果
-    // */
-    // protected void adjustViewPadding(View view, int distance) {
-    // // MarginLayoutParams marginLayoutParams = (MarginLayoutParams)
-    // // view.getLayoutParams();
-    // // marginLayoutParams.topMargin = distance;
-    // // view.setLayoutParams(marginLayoutParams);
-    //
-    // adjustPadding(distance);
-    //
-    // Log.d(VIEW_LOG_TAG, "### adjustViewPadding : view : " + view);
-    // }
 
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
 
     }
 
+    /*
+     * 滚动事件，实现滑动到底部时上拉加载更多
+     * @see android.widget.AbsListView.OnScrollListener#onScroll(android.widget.
+     * AbsListView, int, int, int)
+     */
     @Override
     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
             int totalItemCount) {
 
         Log.d(VIEW_LOG_TAG, "&&& mYDistance = " + mYDistance);
-        if (mFooterView == null || mYDistance >= 0) {
+        if (mFooterView == null || mYDistance >= 0 || mCurrentStatus == STATUS_LOADING
+                || mCurrentStatus == STATUS_REFRESHING) {
             return;
         }
 
-        // if (isShowFooterView()) {
-        // adjustFooterPadding(footerHeight);
-        // } else {
-        // adjustFooterPadding(-footerHeight);
-        // }
         loadmore();
     }
 
     /**
-     * 是否可以下拉刷新了
+     * 是否可以下拉刷新了, 即是否拉到了头部
      * 
      * @return
      */
@@ -607,30 +613,54 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
         return false;
     }
 
+    /**
+     * 是否到了显示footer view的时刻，该方法在onScroll中调用。在这个类中实现了mScroll方法，
+     * 在设置mContentView时会将this设置给mContentView,以此监听mContentView的滑动事件.
+     * 因此如果需要支持上拉加载更多则mContentView必须支持setOnScrollListener方法
+     * ,并且在初始化mContentView时调用该方法进行注册.
+     * 
+     * @return
+     */
     protected boolean isShowFooterView() {
         return false;
     }
 
     /**
+     * 隐藏header view的异步任务, 实现平滑隐藏
+     * 
      * @author mrsimple
      */
-    class HeaderViewHideTask extends AsyncTask<Integer, Void, Void> {
-
-        MarginLayoutParams layoutParams = (MarginLayoutParams) mHeaderView.getLayoutParams();
+    class HeaderViewHideTask extends AsyncTask<Integer, Integer, Void> {
 
         @Override
         protected Void doInBackground(Integer... params) {
-            int speed = params[0];
+            int totalHeight = mHeaderView.getPaddingTop();
+            int targetPadding = params[0];
+            int step = 1;
+            Log.d(VIEW_LOG_TAG, "%%% new : totalHeight =" + totalHeight + ", targetPadding = "
+                    + targetPadding);
+            int mode = totalHeight % step;
 
             try {
                 do {
-                    if (layoutParams.topMargin <= 0) {
+                    if (mHeaderView.getPaddingTop() <= targetPadding) {
                         break;
                     }
 
-                    layoutParams.topMargin += speed;
-                    publishProgress();
-                    Thread.sleep(20);
+                    if (totalHeight - mode == targetPadding) {
+                        if (mode != 0) {
+                            totalHeight -= mode;
+                        } else {
+                            totalHeight = targetPadding;
+                        }
+                    } else {
+                        totalHeight -= step;
+                    }
+                    publishProgress(totalHeight);
+                    Log.d(VIEW_LOG_TAG, "%%% totalHeight = " + totalHeight + ", mode = " + mode
+                            + ", target = "
+                            + targetPadding);
+                    Thread.sleep(1);
                 } while (true);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -639,10 +669,59 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
         }
 
         @Override
-        protected void onProgressUpdate(Void... values) {
-            mHeaderView.setLayoutParams(layoutParams);
+        protected void onProgressUpdate(Integer... values) {
+            adjustHeaderPadding(values[0]);
         }
 
-    }
+    } // end of HeaderViewHideTask
+
+    /**
+     * 隐藏header view的异步任务, 实现平滑隐藏
+     * 
+     * @author mrsimple
+     */
+    class FooterViewTask extends AsyncTask<Integer, Integer, Void> {
+
+        @Override
+        protected Void doInBackground(Integer... params) {
+            // 0
+            int totalHeight = mFooterView.getPaddingBottom();
+            // -footer height
+            int targetPadding = params[0];
+            int step = 1;
+            Log.d(VIEW_LOG_TAG, "%%% new : totalHeight =" + totalHeight + ", targetPadding = "
+                    + targetPadding);
+            try {
+                do {
+
+                    if (totalHeight == targetPadding || totalHeight > 0
+                            || totalHeight < -mFooterHeight) {
+                        break;
+                    }
+
+                    if (targetPadding == 0) {
+                        totalHeight += step;
+                    } else if (targetPadding < 0) {
+                        totalHeight -= step;
+                    }
+                    publishProgress(totalHeight);
+
+                    Log.d(VIEW_LOG_TAG, "%%% totalHeight = " + totalHeight
+                            + ", target = "
+                            + targetPadding);
+                    Thread.sleep(1);
+                } while (true);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            adjustFooterPadding(values[0]);
+        }
+
+    } // end of HeaderViewHideTask
 
 }
