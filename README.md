@@ -2,17 +2,17 @@ android_my_pull_refresh_view
 ============================
 # 概述
     这是一个通用的下拉刷新、上拉自动加载的组件，该组件继承自LinearLayout,方向为竖直布局，由三部分组成，分别是Header、ContentView、Foooter,其中的宽高都为match_parent,另外两个都为宽、高分别为match_parent、wrap_content，且Header、Foooter在初始时都会通过设置padding隐藏掉，只有ContentView区域显示出来。当用户下拉到顶端，并且继续下拉时触发下拉刷新操作；当用户上拉到底部，并且继续上拉时触发加载更多的操作。     
-## 布局示意图
+## 一、布局示意图
 **原始布局**     
-![Alt text] (http://img.blog.csdn.net/20140913165858954?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)     
+![Alt text] (http://img.blog.csdn.net/20140913165858954?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)      
 
-**设置padding后headerh和footer偏移出屏幕**     
+**设置padding后headerh和footer偏移出屏幕**      
 ![Alt text] (http://img.blog.csdn.net/20140913165828046?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)     
 
 
-## 已有库的使用
+## 二、已有组件的使用示例
    下面的例子都是在一个Activity中演示。    
-### PullRefreshListView
+### 2.1 使用PullRefreshListView
 ```java
 public class MainActivity extends Activity {
 
@@ -76,12 +76,12 @@ public class MainActivity extends Activity {
     }
 }
 ```       
-  **下拉刷新截图**    
-  ![Alt text] (http://img.blog.csdn.net/20140913171130673?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
+  **下拉刷新截图**       
+  ![Alt text] (http://img.blog.csdn.net/20140913171130673?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)      
   **上拉到底部的自动加载**     
-  ![Alt text] (http://img.blog.csdn.net/20140913171130673?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center) 
+  ![Alt text] (http://img.blog.csdn.net/20140913171130673?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)       
 
-### 可下拉刷新的TextView
+### 2.2 使用可下拉刷新的TextView
 ```java
 
 public class MainActivity extends Activity {
@@ -134,11 +134,11 @@ public class MainActivity extends Activity {
 **截图**
 ![Alt text] (http://img.blog.csdn.net/20140913171316628?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
         
-## 扩展该组件
-### 1、继承自PullRefreshBase<T>
+## 三、扩展该组件
+### 3.1、继承自PullRefreshBase<T>
 	T为你要实现下拉刷新的View的类型，如ListView.       
 	
-### 2、初始化ContentView
+### 3.2、初始化ContentView
   覆写initContentView方法，并且在该函数中初始化mContentView对象。我们以ListView为例，例如 :       
 ```java
  /*
@@ -154,7 +154,7 @@ public class MainActivity extends Activity {
     }
  ```      
      
-### 3、覆写判断是否滑动到顶端和底部的方法
+### 3.3、覆写判断是否滑动到顶端和底部的方法
    我们以ListView为例，例如 :    
 ```java
     /*
@@ -184,6 +184,6 @@ public class MainActivity extends Activity {
         return mContentView.getLastVisiblePosition() == mContentView.getAdapter().getCount() - 1;
     } 
 ```    
-### 使用即可
+### 3.4使用即可
 
     
