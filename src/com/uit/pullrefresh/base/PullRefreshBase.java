@@ -43,11 +43,15 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.animation.RotateAnimation;
+import android.widget.AbsListView;
+import android.widget.AbsListView.OnScrollListener;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.uit.pullrefresh.R;
 import com.uit.pullrefresh.listener.OnLoadMoreListener;
@@ -57,7 +61,8 @@ import com.uit.pullrefresh.listener.OnPullRefreshListener;
  * @author mrsimple
  * @param <T>
  */
-public abstract class PullRefreshBase<T extends View> extends LinearLayout {
+public abstract class PullRefreshBase<T extends View> extends LinearLayout implements
+        OnScrollListener {
 
     /**
      * 
@@ -110,6 +115,10 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
      * 刷新中
      */
     public static final int STATUS_REFRESHING = 3;
+    /**
+     * 
+     */
+    public static final int STATUS_LOADING = 4;
     /**
      * 当前状态
      */
@@ -165,6 +174,8 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
         initLayout(context);
     }
 
+    protected int mOriginHeaderPaddingTop = 0;
+
     /**
      * 
      */
@@ -184,6 +195,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         //
         mScrHeight = context.getResources().getDisplayMetrics().heightPixels;
+
     }
 
     /**
@@ -209,14 +221,13 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
      */
     protected void initFooterView() {
         // //
-        // ProgressBar footer = new ProgressBar(context);
-        // footer.setIndeterminate(true);
-        // mFooterView = footer;
-        // // mFooterView.setVisibility(View.GONE);
-        // this.addView(mFooterView, 2);
+        ProgressBar footer = new ProgressBar(getContext());
+        footer.setIndeterminate(true);
+        mFooterView = footer;
+        this.addView(mFooterView, 2);
     }
 
-    int top;
+    int footerHeight;
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
@@ -225,14 +236,16 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
         if (changed) {
             mHeaderViewHeight = mHeaderView.getHeight();
             // hide header view
-            mHeaderLayoutParams = (MarginLayoutParams) mHeaderView.getLayoutParams();
+            mHeaderLayoutParams = (MarginLayoutParams)
+                    mHeaderView.getLayoutParams();
             mHeaderLayoutParams.topMargin = -mHeaderViewHeight;
             // padding
-            adjustPadding(-mHeaderViewHeight);
+            adjustHeaderPadding(-mHeaderViewHeight);
 
-            // mHeaderView.setPadding(mHeaderView.getPaddingLeft(),
-            // -mHeaderViewHeight, mHeaderView.getPaddingRight(),
-            // mHeaderView.getPaddingBottom());
+            footerHeight = mFooterView.getHeight();
+            mFooterView.setPadding(mFooterView.getPaddingLeft(),
+                    mFooterView.getPaddingTop(), mFooterView.getPaddingRight(),
+                    -footerHeight);
 
         }
     }
@@ -301,6 +314,8 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
             case MotionEvent.ACTION_MOVE:
                 int yDistance = (int) ev.getRawY() - mYDown;
                 showStatus(mCurrentStatus);
+                Log.d(VIEW_LOG_TAG, "%%% isBottom : " + isBottom() + ", isTop : " + isTop()
+                        + ", mYDistance : " + mYDistance);
                 // 如果拉到了顶部, 并且是下拉,则拦截触摸事件,从而转到onTouchEvent来处理下拉刷新事件
                 if ((isTop() && yDistance > 0)
                         || (mYDistance > 0 && mCurrentStatus == STATUS_REFRESHING)) {
@@ -368,28 +383,12 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
                     }
 
                     rotateHeaderArrow();
-                    int scaleHeight = (int) (mYDistance * 0.7f);
+                    int scaleHeight = (int) (mYDistance * 0.8f);
                     // 小于屏幕高度4分之一时才下拉
                     if (scaleHeight <= mScrHeight / 4) {
-                        adjustPadding(scaleHeight);
+                        adjustHeaderPadding(scaleHeight);
                     }
                 }
-                //
-                // if (mCurrentStatus != STATUS_REFRESHING) {
-                // //
-                // if (mYDistance > mTouchSlop) {
-                // // 高度大于header view的高度才可以刷新
-                // if (mHeaderView.getPaddingTop() > mHeaderViewHeight) {
-                // mCurrentStatus = STATUS_RELEASE_TO_REFRESH;
-                // mTipsTextView.setText(R.string.pull_to_refresh_release_label);
-                // } else {
-                // mCurrentStatus = STATUS_PULL_TO_REFRESH;
-                // mTipsTextView.setText(R.string.pull_to_refresh_pull_label);
-                // }
-                // }
-                // rotateHeaderArrow();
-                // adjustPadding(mYDistance);
-                // }
                 break;
 
             case MotionEvent.ACTION_UP:
@@ -410,14 +409,31 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
      */
     private final void doRefresh() {
         if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH) {
+            //
             mCurrentStatus = STATUS_REFRESHING;
+            //
+            mArrowImageView.setVisibility(View.GONE);
+            mHeaderProgressBar.setVisibility(View.VISIBLE);
+            //
             mPullRefreshListener.onRefresh();
             // 使headview 正常显示, 直到调用了refreshComplete后再隐藏
-            adjustPadding(mHeaderViewHeight + 20);
+            adjustHeaderPadding(mHeaderViewHeight + 20);
+            //
             mTipsTextView.setText(R.string.pull_to_refresh_refreshing_label);
         } else {
             // 隐藏header view
-            adjustPadding(-mHeaderViewHeight);
+            adjustHeaderPadding(-mHeaderViewHeight);
+        }
+    }
+
+    /**
+     * 
+     */
+    private void loadmore() {
+        if (isBottom() && mLoadMoreListener != null && mCurrentStatus != STATUS_REFRESHING) {
+            mCurrentStatus = STATUS_LOADING;
+            adjustFooterPadding(footerHeight);
+            mLoadMoreListener.onLoadMore();
         }
     }
 
@@ -429,22 +445,27 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
     }
 
     /**
-     * 
+     * @param listener
      */
-    public void refreshComplete() {
-        mCurrentStatus = STATUS_IDLE;
-        resetHeaderView();
+    public void setOnLoadMoreListener(OnLoadMoreListener listener) {
+        mLoadMoreListener = listener;
     }
 
     /**
      * 
      */
-    protected void resetHeaderView() {
-        // int curHeight = mHeaderLayoutParams.topMargin;
-        // mHeaderLayoutParams.topMargin = -curHeight;
-        // mHeaderView.setLayoutParams(mHeaderLayoutParams);
+    public void refreshComplete() {
+        mCurrentStatus = STATUS_IDLE;
+        mHeaderProgressBar.setVisibility(View.GONE);
+        mArrowImageView.setVisibility(View.VISIBLE);
+        hideHeaderView();
+    }
 
-        adjustPadding(-mHeaderViewHeight);
+    /**
+     * 
+     */
+    protected void hideHeaderView() {
+        adjustHeaderPadding(-mHeaderViewHeight);
     }
 
     protected boolean isArrowUp = false;
@@ -453,6 +474,15 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
      * 
      */
     protected void rotateHeaderArrow() {
+
+        if (mCurrentStatus == STATUS_REFRESHING) {
+            return;
+        } else if (mCurrentStatus == STATUS_PULL_TO_REFRESH && !isArrowUp) {
+            return;
+        } else if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH && isArrowUp) {
+            return;
+        }
+
         float pivotX = mArrowImageView.getWidth() / 2f;
         float pivotY = mArrowImageView.getHeight() / 2f;
         float fromDegrees = 0f;
@@ -465,11 +495,6 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
             toDegrees = 180f;
         }
 
-        if (mCurrentStatus == STATUS_PULL_TO_REFRESH && !isArrowUp) {
-            return;
-        } else if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH && isArrowUp) {
-            return;
-        }
         RotateAnimation animation = new RotateAnimation(fromDegrees, toDegrees, pivotX, pivotY);
         animation.setDuration(100);
         animation.setFillAfter(true);
@@ -493,10 +518,16 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
      * 
      */
     public void loadMoreComplete() {
-
+        mCurrentStatus = STATUS_IDLE;
+        adjustFooterPadding(-footerHeight);
     }
 
-    private void adjustPadding(int topPadding) {
+    private void adjustFooterPadding(int bottomPadding) {
+        mFooterView.setPadding(mFooterView.getPaddingLeft(), mFooterView.getPaddingTop(),
+                mFooterView.getPaddingRight(), bottomPadding);
+    }
+
+    private void adjustHeaderPadding(int topPadding) {
         mHeaderView.setPadding(mHeaderView.getPaddingLeft(), topPadding,
                 mHeaderView.getPaddingRight(), mHeaderView.getPaddingBottom());
     }
@@ -514,6 +545,17 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
     //
     // Log.d(VIEW_LOG_TAG, "### adjustViewPadding : view : " + view);
     // }
+
+    @Override
+    public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+    }
+
+    @Override
+    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
+            int totalItemCount) {
+        loadmore();
+    }
 
     /**
      * 是否可以下拉刷新了

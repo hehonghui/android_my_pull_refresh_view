@@ -70,13 +70,42 @@ public class PullRefreshListView extends PullRefreshBase<ListView> {
         Log.d(VIEW_LOG_TAG, "### isTop, mContentView.getTop() = " + mContentView.getTop()
                 + ", first child : "
                 + firstChild.getTop());
-        return mContentView.getFirstVisiblePosition() == 0 && firstChild != null
+        return mContentView.getFirstVisiblePosition() == 0
                 && (firstChild.getTop() >= mContentView.getTop());
+    }
+
+    @Override
+    protected boolean isBottom() {
+
+        if (mContentView == null || mContentView.getAdapter() == null) {
+            return false;
+        }
+        // 总数
+        int count = mContentView.getAdapter().getCount();
+        // 显示的数量
+        int activeCount = mContentView.getChildCount();
+        //
+        View lastChild = mContentView.getChildAt(activeCount - 1);
+        if (lastChild == null) {
+            return true;
+        }
+
+        Log.d(VIEW_LOG_TAG,
+                "### isBottom, mContentView.getBottom() = " + mContentView.getBottom()
+                        + ", last child getBottom: "
+                        + lastChild.getBottom() + ", last postion : "
+                        + mContentView.getLastVisiblePosition() + ", child count : " + count
+                        + ", active count : " + activeCount);
+        return mContentView.getLastVisiblePosition() == count - 1
+                && (lastChild.getBottom() <= mContentView.getBottom());
     }
 
     @Override
     protected void initContentView() {
         mContentView = new ListView(getContext());
+        //
+        mContentView.setOnScrollListener(this);
+        //
         int count = mContentView.getHeaderViewsCount();
         for (int i = 0; i < count; i++) {
             mContentView.removeHeaderView(mContentView.getChildAt(i));

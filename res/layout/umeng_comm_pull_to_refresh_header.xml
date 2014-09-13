@@ -12,10 +12,10 @@
         style="@android:style/Widget.ProgressBar.Small.Inverse"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
         android:layout_marginLeft="30dip"
         android:layout_marginRight="20dip"
-        android:indeterminate="true" />
+        android:indeterminate="true"
+        android:visibility="gone" />
 
     <ImageView
         android:id="@+id/pull_to_refresh_image"
@@ -24,6 +24,7 @@
         android:layout_gravity="center"
         android:layout_marginLeft="30dip"
         android:layout_marginRight="20dip"
+        android:contentDescription="@string/pull_to_refresh_pull_label"
         android:gravity="center"
         android:src="@drawable/umeng_socialize_pulltorefresh_arrow" />
 
