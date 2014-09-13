@@ -43,7 +43,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.animation.RotateAnimation;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.uit.pullrefresh.R;
 import com.uit.pullrefresh.listener.OnLoadMoreListener;
@@ -129,6 +133,19 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
     protected int mYDown = 0;
 
     /**
+     * header view里面的进度条
+     */
+    protected ProgressBar mHeaderProgressBar;
+
+    protected ImageView mArrowImageView;
+
+    protected TextView mTipsTextView;
+
+    protected TextView mTimeTextView;
+
+    protected int mScrHeight = 0;
+
+    /**
      * @param context
      */
     public PullRefreshBase(Context context) {
@@ -165,6 +182,8 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
 
         //
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        //
+        mScrHeight = context.getResources().getDisplayMetrics().heightPixels;
     }
 
     /**
@@ -175,10 +194,14 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
         mHeaderView = (ViewGroup) mInflater.inflate(R.layout.umeng_comm_pull_to_refresh_header,
                 null);
         mHeaderView.setBackgroundColor(Color.RED);
-        // measureView(mHeaderView);
 
+        mHeaderProgressBar = (ProgressBar) mHeaderView.findViewById(R.id.pull_to_refresh_progress);
+        mArrowImageView = (ImageView) mHeaderView.findViewById(R.id.pull_to_refresh_image);
+        mTipsTextView = (TextView) mHeaderView.findViewById(R.id.pull_to_refresh_text);
+        mTimeTextView = (TextView) mHeaderView.findViewById(R.id.pull_to_refresh_updated_at);
         // add header view to parent
         this.addView(mHeaderView, 0);
+
     }
 
     /**
@@ -270,17 +293,22 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
         }
 
         switch (action) {
-            case MotionEvent.ACTION_MOVE:
-                int yDistance = (int) ev.getRawY() - mYDown;
-                // 如果拉到了顶部, 并且是下拉,则拦截触摸事件,从而转到onTouchEvent来处理下拉刷新事件
-                if (isTop() && yDistance > 0) {
-                    return true;
-                }
-                break;
 
             case MotionEvent.ACTION_DOWN:
                 mYDown = (int) ev.getRawY();
                 break;
+
+            case MotionEvent.ACTION_MOVE:
+                int yDistance = (int) ev.getRawY() - mYDown;
+                showStatus(mCurrentStatus);
+                // 如果拉到了顶部, 并且是下拉,则拦截触摸事件,从而转到onTouchEvent来处理下拉刷新事件
+                if ((isTop() && yDistance > 0)
+                        || (mYDistance > 0 && mCurrentStatus == STATUS_REFRESHING)) {
+                    Log.d(VIEW_LOG_TAG, "--------- mYDistance : " + mYDistance);
+                    return true;
+                }
+                break;
+
         }
 
         // Do not intercept touch event, let the child handle it
@@ -326,25 +354,47 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
 
                 Log.d(VIEW_LOG_TAG, "### touch slop = " + mTouchSlop + ", distance = " + mYDistance);
                 showStatus(mCurrentStatus);
-                //
-                if (mCurrentStatus != STATUS_REFRESHING) {
-                    //
-                    if (mYDistance > mTouchSlop) {
-                        // 高度大于header view的高度才可以刷新
+                // 高度大于header view的高度才可以刷新
+                if (mYDistance >= mTouchSlop) {
+                    if (mCurrentStatus != STATUS_REFRESHING) {
+                        //
                         if (mHeaderView.getPaddingTop() > mHeaderViewHeight) {
                             mCurrentStatus = STATUS_RELEASE_TO_REFRESH;
+                            mTipsTextView.setText(R.string.pull_to_refresh_release_label);
                         } else {
                             mCurrentStatus = STATUS_PULL_TO_REFRESH;
+                            mTipsTextView.setText(R.string.pull_to_refresh_pull_label);
                         }
                     }
-                    adjustPadding(mYDistance);
+
+                    rotateHeaderArrow();
+                    int scaleHeight = (int) (mYDistance * 0.7f);
+                    // 小于屏幕高度4分之一时才下拉
+                    if (scaleHeight <= mScrHeight / 4) {
+                        adjustPadding(scaleHeight);
+                    }
                 }
+                //
+                // if (mCurrentStatus != STATUS_REFRESHING) {
+                // //
+                // if (mYDistance > mTouchSlop) {
+                // // 高度大于header view的高度才可以刷新
+                // if (mHeaderView.getPaddingTop() > mHeaderViewHeight) {
+                // mCurrentStatus = STATUS_RELEASE_TO_REFRESH;
+                // mTipsTextView.setText(R.string.pull_to_refresh_release_label);
+                // } else {
+                // mCurrentStatus = STATUS_PULL_TO_REFRESH;
+                // mTipsTextView.setText(R.string.pull_to_refresh_pull_label);
+                // }
+                // }
+                // rotateHeaderArrow();
+                // adjustPadding(mYDistance);
+                // }
                 break;
 
             case MotionEvent.ACTION_UP:
                 // 下拉刷新的具体操作
                 doRefresh();
-                mCurrentStatus = STATUS_IDLE;
                 break;
             default:
                 break;
@@ -363,7 +413,8 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
             mCurrentStatus = STATUS_REFRESHING;
             mPullRefreshListener.onRefresh();
             // 使headview 正常显示, 直到调用了refreshComplete后再隐藏
-            adjustPadding(mHeaderViewHeight);
+            adjustPadding(mHeaderViewHeight + 20);
+            mTipsTextView.setText(R.string.pull_to_refresh_refreshing_label);
         } else {
             // 隐藏header view
             adjustPadding(-mHeaderViewHeight);
@@ -396,11 +447,39 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout {
         adjustPadding(-mHeaderViewHeight);
     }
 
+    protected boolean isArrowUp = false;
+
     /**
      * 
      */
     protected void rotateHeaderArrow() {
+        float pivotX = mArrowImageView.getWidth() / 2f;
+        float pivotY = mArrowImageView.getHeight() / 2f;
+        float fromDegrees = 0f;
+        float toDegrees = 0f;
+        if (mCurrentStatus == STATUS_PULL_TO_REFRESH) {
+            fromDegrees = 180f;
+            toDegrees = 360f;
+        } else if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH) {
+            fromDegrees = 0f;
+            toDegrees = 180f;
+        }
 
+        if (mCurrentStatus == STATUS_PULL_TO_REFRESH && !isArrowUp) {
+            return;
+        } else if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH && isArrowUp) {
+            return;
+        }
+        RotateAnimation animation = new RotateAnimation(fromDegrees, toDegrees, pivotX, pivotY);
+        animation.setDuration(100);
+        animation.setFillAfter(true);
+        mArrowImageView.startAnimation(animation);
+
+        if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH) {
+            isArrowUp = true;
+        } else {
+            isArrowUp = false;
+        }
     }
 
     /**
