@@ -444,7 +444,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
                 mPullRefreshListener.onRefresh();
             }
             // 使headview 正常显示, 直到调用了refreshComplete后再隐藏
-            new HeaderViewHideTask().execute(mHeaderViewHeight);
+            new HeaderViewHideTask().execute(0);
 
         } else {
             // 隐藏header view

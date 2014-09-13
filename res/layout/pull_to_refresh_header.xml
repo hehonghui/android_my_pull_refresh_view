@@ -3,13 +3,15 @@
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:background="#F4F4F4"
-    android:gravity="center" >
+    android:gravity="center"
+    android:padding="8dp" >
 
     <ProgressBar
         android:id="@+id/pull_to_refresh_progress"
         style="@android:style/Widget.ProgressBar.Small.Inverse"
         android:layout_width="wrap_content"
         android:layout_height="30dp"
+        android:layout_centerVertical="true"
         android:layout_marginLeft="30dip"
         android:layout_marginRight="20dip"
         android:indeterminate="true"
