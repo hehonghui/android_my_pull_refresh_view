@@ -6,5 +6,6 @@
     <string name="pull_to_refresh_release_label" translatable="false">松开可以刷新</string>
     <string name="pull_to_refresh_refreshing_label" translatable="false">加载中&#8230;</string>
     <string name="pull_to_refresh_update_time_label" translatable="false">上次更新时间</string>
+    <string name="pull_to_refresh_load_label" translatable="false">上拉加载更多</string>
 
 </resources>

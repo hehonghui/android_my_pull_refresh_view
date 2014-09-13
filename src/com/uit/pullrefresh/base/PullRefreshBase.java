@@ -43,7 +43,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.animation.RotateAnimation;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
@@ -51,7 +50,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.uit.pullrefresh.R;
 import com.uit.pullrefresh.listener.OnLoadMoreListener;
@@ -77,7 +75,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     /**
      * 
      */
-    protected View mFooterView;
+    protected ViewGroup mFooterView;
     /**
      * 
      */
@@ -115,10 +113,15 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
      * 刷新中
      */
     public static final int STATUS_REFRESHING = 3;
+
     /**
      * 
      */
-    public static final int STATUS_LOADING = 4;
+    public static final int STATUS_LOADING_VIEW_SHOW = 4;
+    /**
+     * 
+     */
+    public static final int STATUS_LOADING = 5;
     /**
      * 当前状态
      */
@@ -127,6 +130,8 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
      * 
      */
     protected MarginLayoutParams mHeaderLayoutParams;
+
+    protected MarginLayoutParams mFooterLayoutParams;
 
     /**
      * 
@@ -203,7 +208,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
      */
     protected void initHeaderView() {
         //
-        mHeaderView = (ViewGroup) mInflater.inflate(R.layout.umeng_comm_pull_to_refresh_header,
+        mHeaderView = (ViewGroup) mInflater.inflate(R.layout.pull_to_refresh_header,
                 null);
         mHeaderView.setBackgroundColor(Color.RED);
 
@@ -216,14 +221,18 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
 
     }
 
+    ProgressBar mFooterProgressBar;
+    TextView mFooterTextView;
+
     /**
      * 
      */
     protected void initFooterView() {
-        // //
-        ProgressBar footer = new ProgressBar(getContext());
-        footer.setIndeterminate(true);
-        mFooterView = footer;
+
+        mFooterView = (ViewGroup) mInflater.inflate(R.layout.pull_to_refresh_footer, null);
+
+        mFooterProgressBar = (ProgressBar) mFooterView.findViewById(R.id.pull_to_loading_progress);
+        mFooterTextView = (TextView) mFooterView.findViewById(R.id.pull_to_loading_text);
         this.addView(mFooterView, 2);
     }
 
@@ -243,10 +252,9 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
             adjustHeaderPadding(-mHeaderViewHeight);
 
             footerHeight = mFooterView.getHeight();
-            mFooterView.setPadding(mFooterView.getPaddingLeft(),
-                    mFooterView.getPaddingTop(), mFooterView.getPaddingRight(),
-                    -footerHeight);
-
+            mFooterLayoutParams = (MarginLayoutParams) mFooterView
+                    .getLayoutParams();
+            adjustFooterPadding(-footerHeight);
         }
     }
 
@@ -280,6 +288,10 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
      */
     public void setContentView(T view) {
         mContentView = view;
+        LinearLayout.LayoutParams lvLayoutParams = (LinearLayout.LayoutParams) mContentView
+                .getLayoutParams();
+        lvLayoutParams.weight = 1.0f;
+        mContentView.setLayoutParams(lvLayoutParams);
         this.addView(mContentView, 1);
     }
 
@@ -312,12 +324,13 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
                 break;
 
             case MotionEvent.ACTION_MOVE:
-                int yDistance = (int) ev.getRawY() - mYDown;
+                // int yDistance = (int) ev.getRawY() - mYDown;
+                mYDistance = (int) ev.getRawY() - mYDown;
                 showStatus(mCurrentStatus);
                 Log.d(VIEW_LOG_TAG, "%%% isBottom : " + isBottom() + ", isTop : " + isTop()
                         + ", mYDistance : " + mYDistance);
                 // 如果拉到了顶部, 并且是下拉,则拦截触摸事件,从而转到onTouchEvent来处理下拉刷新事件
-                if ((isTop() && yDistance > 0)
+                if ((isTop() && mYDistance > 0)
                         || (mYDistance > 0 && mCurrentStatus == STATUS_REFRESHING)) {
                     Log.d(VIEW_LOG_TAG, "--------- mYDistance : " + mYDistance);
                     return true;
@@ -389,6 +402,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
                         adjustHeaderPadding(scaleHeight);
                     }
                 }
+
                 break;
 
             case MotionEvent.ACTION_UP:
@@ -414,6 +428,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
             //
             mArrowImageView.setVisibility(View.GONE);
             mHeaderProgressBar.setVisibility(View.VISIBLE);
+            Log.d(VIEW_LOG_TAG, "----- doRefresh") ;
             //
             mPullRefreshListener.onRefresh();
             // 使headview 正常显示, 直到调用了refreshComplete后再隐藏
@@ -430,8 +445,11 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
      * 
      */
     private void loadmore() {
-        if (isBottom() && mLoadMoreListener != null && mCurrentStatus != STATUS_REFRESHING) {
+        if (isShowFooterView() && mLoadMoreListener != null
+                && (mCurrentStatus != STATUS_REFRESHING || mCurrentStatus != STATUS_LOADING)) {
             mCurrentStatus = STATUS_LOADING;
+            mFooterTextView.setText(R.string.pull_to_refresh_refreshing_label);
+            mFooterProgressBar.setVisibility(View.VISIBLE);
             adjustFooterPadding(footerHeight);
             mLoadMoreListener.onLoadMore();
         }
@@ -458,6 +476,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
         mCurrentStatus = STATUS_IDLE;
         mHeaderProgressBar.setVisibility(View.GONE);
         mArrowImageView.setVisibility(View.VISIBLE);
+        Log.d(VIEW_LOG_TAG, "----- refreshComplete") ;
         hideHeaderView();
     }
 
@@ -483,6 +502,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
             return;
         }
 
+        Log.d(VIEW_LOG_TAG, "------ rotateHeaderArrow") ;
         float pivotX = mArrowImageView.getWidth() / 2f;
         float pivotY = mArrowImageView.getHeight() / 2f;
         float fromDegrees = 0f;
@@ -519,11 +539,14 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
      */
     public void loadMoreComplete() {
         mCurrentStatus = STATUS_IDLE;
+        mFooterTextView.setText(R.string.pull_to_refresh_load_label);
+        mFooterProgressBar.setVisibility(View.GONE);
         adjustFooterPadding(-footerHeight);
     }
 
     private void adjustFooterPadding(int bottomPadding) {
-        mFooterView.setPadding(mFooterView.getPaddingLeft(), mFooterView.getPaddingTop(),
+        mFooterView.setPadding(mFooterView.getPaddingLeft(),
+                mFooterView.getPaddingTop(),
                 mFooterView.getPaddingRight(), bottomPadding);
     }
 
@@ -554,6 +577,17 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     @Override
     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
             int totalItemCount) {
+
+        Log.d(VIEW_LOG_TAG, "&&& mYDistance = " + mYDistance);
+        if (mFooterView == null || mYDistance >= 0) {
+            return;
+        }
+
+        // if (isShowFooterView()) {
+        // adjustFooterPadding(footerHeight);
+        // } else {
+        // adjustFooterPadding(-footerHeight);
+        // }
         loadmore();
     }
 
@@ -570,6 +604,10 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
      * @return
      */
     protected boolean isBottom() {
+        return false;
+    }
+
+    protected boolean isShowFooterView() {
         return false;
     }
 

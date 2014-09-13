@@ -101,6 +101,15 @@ public class PullRefreshListView extends PullRefreshBase<ListView> {
     }
 
     @Override
+    protected boolean isShowFooterView() {
+        if (mContentView == null || mContentView.getAdapter() == null) {
+            return false;
+        }
+
+        return mContentView.getLastVisiblePosition() == mContentView.getAdapter().getCount() - 1;
+    }
+
+    @Override
     protected void initContentView() {
         mContentView = new ListView(getContext());
         //
