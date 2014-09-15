@@ -103,7 +103,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        setContentView(mPullRefreshListView);
+        // setContentView(mPullRefreshListView);
 
         // setContentView(R.layout.umeng_comm_pull_to_refresh_header);
 
@@ -142,7 +142,7 @@ public class MainActivity extends Activity {
             }
         });
 
-//         setContentView(pullRefreshTextView);
+        // setContentView(pullRefreshTextView);
 
     }
 

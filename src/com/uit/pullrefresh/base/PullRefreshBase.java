@@ -446,9 +446,12 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
             // 使headview 正常显示, 直到调用了refreshComplete后再隐藏
             new HeaderViewHideTask().execute(0);
 
+        } else if (mCurrentStatus == STATUS_REFRESHING) {
+            // 使headview 正常显示, 直到调用了refreshComplete后再隐藏
+            new HeaderViewHideTask().execute(0);
         } else {
             // 隐藏header view
-            adjustHeaderPadding(-mHeaderViewHeight);
+            hideHeaderView();
         }
     }
 
@@ -634,12 +637,12 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
 
         @Override
         protected Void doInBackground(Integer... params) {
-            int totalHeight = mHeaderView.getPaddingTop();
+            int curPaddingTop = mHeaderView.getPaddingTop();
             int targetPadding = params[0];
             int step = 1;
-            Log.d(VIEW_LOG_TAG, "%%% new : totalHeight =" + totalHeight + ", targetPadding = "
+            Log.d(VIEW_LOG_TAG, "%%% new : curPaddingTop =" + curPaddingTop + ", targetPadding = "
                     + targetPadding);
-            int mode = totalHeight % step;
+            int mode = curPaddingTop % step;
 
             try {
                 do {
@@ -647,17 +650,17 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
                         break;
                     }
 
-                    if (totalHeight - mode == targetPadding) {
+                    if (curPaddingTop - mode == targetPadding) {
                         if (mode != 0) {
-                            totalHeight -= mode;
+                            curPaddingTop -= mode;
                         } else {
-                            totalHeight = targetPadding;
+                            curPaddingTop = targetPadding;
                         }
                     } else {
-                        totalHeight -= step;
+                        curPaddingTop -= step;
                     }
-                    publishProgress(totalHeight);
-                    Log.d(VIEW_LOG_TAG, "%%% totalHeight = " + totalHeight + ", mode = " + mode
+                    publishProgress(curPaddingTop);
+                    Log.d(VIEW_LOG_TAG, "%%% curPaddingTop = " + curPaddingTop + ", mode = " + mode
                             + ", target = "
                             + targetPadding);
                     Thread.sleep(1);
@@ -685,28 +688,29 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
         @Override
         protected Void doInBackground(Integer... params) {
             // 0
-            int totalHeight = mFooterView.getPaddingBottom();
+            int curPaddingBottom = mFooterView.getPaddingBottom();
             // -footer height
             int targetPadding = params[0];
             int step = 1;
-            Log.d(VIEW_LOG_TAG, "%%% new : totalHeight =" + totalHeight + ", targetPadding = "
+            Log.d(VIEW_LOG_TAG, "%%% new : curPaddingTop =" + curPaddingBottom
+                    + ", targetPadding = "
                     + targetPadding);
             try {
                 do {
 
-                    if (totalHeight == targetPadding || totalHeight > 0
-                            || totalHeight < -mFooterHeight) {
+                    if (curPaddingBottom == targetPadding || curPaddingBottom > 0
+                            || curPaddingBottom < -mFooterHeight) {
                         break;
                     }
 
                     if (targetPadding == 0) {
-                        totalHeight += step;
+                        curPaddingBottom += step;
                     } else if (targetPadding < 0) {
-                        totalHeight -= step;
+                        curPaddingBottom -= step;
                     }
-                    publishProgress(totalHeight);
+                    publishProgress(curPaddingBottom);
 
-                    Log.d(VIEW_LOG_TAG, "%%% totalHeight = " + totalHeight
+                    Log.d(VIEW_LOG_TAG, "%%% curPaddingTop = " + curPaddingBottom
                             + ", target = "
                             + targetPadding);
                     Thread.sleep(1);
