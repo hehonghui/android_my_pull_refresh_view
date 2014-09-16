@@ -258,7 +258,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
 
-        if (changed) {
+        if (changed && mHeaderViewHeight <= 0) {
             mHeaderViewHeight = mHeaderView.getHeight();
             // padding
             adjustHeaderPadding(-mHeaderViewHeight);

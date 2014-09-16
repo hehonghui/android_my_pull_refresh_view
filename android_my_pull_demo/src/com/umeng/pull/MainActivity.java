@@ -34,6 +34,7 @@ package com.umeng.pull;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.ViewStub;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -103,7 +104,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        // setContentView(mPullRefreshListView);
+         setContentView(mPullRefreshListView);
 
         // setContentView(R.layout.umeng_comm_pull_to_refresh_header);
 
