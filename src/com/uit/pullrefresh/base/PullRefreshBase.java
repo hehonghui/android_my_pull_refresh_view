@@ -385,7 +385,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
                 Log.d(VIEW_LOG_TAG, "### touch slop = " + mTouchSlop + ", distance = " + mYDistance);
                 showStatus(mCurrentStatus);
                 // 高度大于header view的高度才可以刷新
-                if (mYDistance >= mTouchSlop) {
+                if (Math.abs(mYDistance) >= mTouchSlop) {
                     if (mCurrentStatus != STATUS_REFRESHING) {
                         //
                         if (mHeaderView.getPaddingTop() > mHeaderViewHeight * 0.7f) {
