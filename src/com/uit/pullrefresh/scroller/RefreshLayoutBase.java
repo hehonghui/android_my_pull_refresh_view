@@ -37,7 +37,6 @@ import android.graphics.Color;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -45,9 +44,7 @@ import android.view.ViewGroup;
 import android.view.animation.RotateAnimation;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Scroller;
 import android.widget.TextView;
@@ -62,41 +59,42 @@ import java.util.Date;
 /**
  * @author mrsimple
  */
-public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
+public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implements
+        OnScrollListener {
 
     /**
      * 
      */
-    Scroller mScroller;
+    protected Scroller mScroller;
 
     /**
      * 
      */
-    View mHeaderView;
+    protected View mHeaderView;
 
     /**
      * 
      */
-    TextView mFooterView;
+    protected View mFooterView;
 
     /**
      * 
      */
-    private int mYOffset;
+    protected int mYOffset;
 
     /**
      * 
      */
-    ListView mContentView;
+    protected T mContentView;
 
     /**
      * 
      */
-    int mInitScrollY = 0;
+    protected int mInitScrollY = 0;
     /**
      * 
      */
-    int mLastY = 0;
+    protected int mLastY = 0;
 
     /**
      * 空闲状态
@@ -130,7 +128,7 @@ public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
     /**
      * 
      */
-    OnPullRefreshListener mOnPullRefreshListener;
+    protected OnPullRefreshListener mOnPullRefreshListener;
 
     /**
      * 
@@ -155,7 +153,7 @@ public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
     /**
      * 
      */
-    private OnLoadListener mLoadListener;
+    protected OnLoadListener mLoadListener;
 
     /**
      * @param context
@@ -211,30 +209,44 @@ public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
         mTimeTextView = (TextView) mHeaderView.findViewById(R.id.pull_to_refresh_updated_at);
         mProgressBar = (ProgressBar) mHeaderView.findViewById(R.id.pull_to_refresh_progress);
 
+        // 设置内容视图
+        setupContentView();
+        // 设置布局参数
+        setDefaultContentLayoutParams();
         //
-        mContentView = new ListView(context);
-        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.MATCH_PARENT);
-        String[] dataStrings = new String[20];
-        for (int i = 0; i < dataStrings.length; i++) {
-            dataStrings[i] = "item - " + i;
-        }
-        //
-        mContentView.setAdapter(new ArrayAdapter<String>(context,
-                android.R.layout.simple_list_item_1, dataStrings));
-        mContentView.setOnScrollListener(this);
-        //
-        addView(mContentView, params);
+        addView(mContentView);
 
         //
-        mFooterView = new TextView(context);
-        mFooterView.setText("footer");
-        mFooterView.setBackgroundColor(Color.CYAN);
-        mFooterView.setTextSize(30f);
-        mFooterView.setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.MATCH_PARENT, 80));
-        mFooterView.setGravity(Gravity.CENTER);
+        // mFooterView = new TextView(context);
+        // mFooterView.setText("footer");
+        // mFooterView.setBackgroundColor(Color.CYAN);
+        // mFooterView.setTextSize(30f);
+        // mFooterView.setLayoutParams(new
+        // ViewGroup.LayoutParams(LayoutParams.MATCH_PARENT, 80));
+        // mFooterView.setGravity(Gravity.CENTER);
+
+        /**
+         * 
+         */
+        mFooterView = LayoutInflater.from(getContext()).inflate(R.layout.pull_to_refresh_footer,
+                this, false);
         addView(mFooterView);
 
+    }
+
+    /**
+     * 
+     */
+    protected abstract void setupContentView();
+
+    /**
+     * 
+     */
+    protected void setDefaultContentLayoutParams() {
+        ViewGroup.LayoutParams params =
+                new ViewGroup.LayoutParams(LayoutParams.MATCH_PARENT,
+                        LayoutParams.MATCH_PARENT);
+        mContentView.setLayoutParams(params);
     }
 
     /**
@@ -293,42 +305,36 @@ public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
     /**
      * @return
      */
-    protected boolean isTop() {
-        // Log.d(VIEW_LOG_TAG,
-        // "### first pos = " + contentView.getFirstVisiblePosition()
-        // + ", getScrollY= " + getScrollY());
-        return mContentView.getFirstVisiblePosition() == 0
-                && getScrollY() <= mHeaderView.getMeasuredHeight();
-    }
+    // protected boolean isTop() {
+    // // Log.d(VIEW_LOG_TAG,
+    // // "### first pos = " + contentView.getFirstVisiblePosition()
+    // // + ", getScrollY= " + getScrollY());
+    // return mContentView.getFirstVisiblePosition() == 0
+    // && getScrollY() <= mHeaderView.getMeasuredHeight();
+    // }
 
-    /**
-     * @return
-     */
-    protected boolean isBottom() {
-        // Log.d(VIEW_LOG_TAG, "### last position = " +
-        // contentView.getLastVisiblePosition()
-        // + ", count = " + contentView.getAdapter().getCount());
-        return mContentView != null
-                && mContentView.getLastVisiblePosition() == mContentView.getAdapter().getCount() - 1;
-    }
+    protected abstract boolean isTop();
+
+    protected abstract boolean isBottom();
+
+    // /**
+    // * @return
+    // */
+    // protected boolean isBottom() {
+    // // Log.d(VIEW_LOG_TAG, "### last position = " +
+    // // contentView.getLastVisiblePosition()
+    // // + ", count = " + contentView.getAdapter().getCount());
+    // return mContentView != null
+    // && mContentView.getLastVisiblePosition() ==
+    // mContentView.getAdapter().getCount() - 1;
+    // }
 
     /**
      * 显示footer view
      */
-    private void showFooter() {
+    private void showFooterView() {
         startScroll(mFooterView.getMeasuredHeight());
         mCurrentStatus = STATUS_LOADING;
-
-        if (mLoadListener != null) {
-            mLoadListener.onLoadMore();
-        }
-        postDelayed(new Runnable() {
-
-            @Override
-            public void run() {
-                loadCompelte();
-            }
-        }, 1000);
     }
 
     /**
@@ -406,7 +412,7 @@ public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
     /**
      * 旋转箭头图标
      */
-    protected void rotateHeaderArrow() {
+    private void rotateHeaderArrow() {
 
         if (mCurrentStatus == STATUS_REFRESHING) {
             return;
@@ -473,6 +479,10 @@ public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
     public void refreshComplete() {
         mCurrentStatus = STATUS_IDLE;
 
+        mScroller.startScroll(getScrollX(), getScrollY(), 0, mInitScrollY - getScrollY());
+        invalidate();
+        updateTimeStamp();
+
         // 200毫秒后处理arrow和progressbar,免得太突兀
         this.postDelayed(new Runnable() {
 
@@ -481,7 +491,7 @@ public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
                 mArrowImageView.setVisibility(View.VISIBLE);
                 mProgressBar.setVisibility(View.GONE);
             }
-        }, 200);
+        }, 100);
 
     }
 
@@ -524,17 +534,15 @@ public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
      */
     private void doRefresh() {
         refreshingHeader();
-        // 恢复原始的视图
-        postDelayed(new Runnable() {
+    }
 
-            @Override
-            public void run() {
-                mScroller.startScroll(getScrollX(), getScrollY(), 0, mInitScrollY - getScrollY());
-                invalidate();
-                refreshComplete();
-                updateTimeStamp();
-            }
-        }, 2000);
+    /**
+     * 
+     */
+    private void doLoadMore() {
+        if (mLoadListener != null) {
+            mLoadListener.onLoadMore();
+        }
     }
 
     /**
@@ -551,7 +559,7 @@ public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
     /**
      * @return
      */
-    public View getContentView() {
+    public T getContentView() {
         return mContentView;
     }
 
@@ -615,9 +623,11 @@ public class RefreshLayoutBase extends ViewGroup implements OnScrollListener {
     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
             int totalItemCount) {
         Log.d(VIEW_LOG_TAG, "### onScrollChanged ");
-        if (isBottom() && mScroller.getCurrY() <= mInitScrollY && mYOffset <= 0
+        if (mLoadListener != null && isBottom() && mScroller.getCurrY() <= mInitScrollY
+                && mYOffset <= 0
                 && mCurrentStatus == STATUS_IDLE) {
-            showFooter();
+            showFooterView();
+            doLoadMore();
         }
     }
 

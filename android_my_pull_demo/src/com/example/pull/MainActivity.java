@@ -30,24 +30,32 @@
  *                #####################################################
  */
 
-package com.umeng.pull;
+package com.example.pull;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.example.pull.R;
 import com.uit.pullrefresh.base.impl.PullRefreshListView;
 import com.uit.pullrefresh.base.impl.PullRefreshTextView;
 import com.uit.pullrefresh.listener.OnLoadListener;
 import com.uit.pullrefresh.listener.OnPullRefreshListener;
-import com.uit.pullrefresh.scroller.RefreshLayoutBase;
+import com.uit.pullrefresh.scroller.impl.RefreshGridView;
+import com.uit.pullrefresh.scroller.impl.RefreshListView;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+/**
+ * @author mrsimple
+ */
 public class MainActivity extends Activity {
 
     ListView mListView;
@@ -145,25 +153,38 @@ public class MainActivity extends Activity {
 
         // setContentView(pullRefreshTextView);
 
-        RefreshLayoutBase refreshLayout = new RefreshLayoutBase(this);
-        refreshLayout.setOnRefreshListener(new OnPullRefreshListener() {
+        //
+        setContentView(R.layout.pull_refresh_main);
+
+        findViewById(R.id.refresh_listview).setOnClickListener(new OnClickListener() {
 
             @Override
-            public void onRefresh() {
-                Toast.makeText(getApplicationContext(), "refreshing", Toast.LENGTH_SHORT)
-                        .show();
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, ShowActivity.class);
+                intent.putExtra("index", ShowActivity.REFRESH_LV);
+                startActivity(intent);
             }
         });
 
-        refreshLayout.setOnLoadListener(new OnLoadListener() {
+        findViewById(R.id.refresh_gridview).setOnClickListener(new OnClickListener() {
 
             @Override
-            public void onLoadMore() {
-                Toast.makeText(getApplicationContext(), "loading", Toast.LENGTH_SHORT)
-                        .show();
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, ShowActivity.class);
+                intent.putExtra("index", ShowActivity.REFRESH_GV);
+                startActivity(intent);
             }
         });
-        setContentView( refreshLayout );
+
+        findViewById(R.id.refresh_textview).setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, ShowActivity.class);
+                intent.putExtra("index", ShowActivity.REFRESH_TV);
+                startActivity(intent);
+            }
+        });
 
     }
 }

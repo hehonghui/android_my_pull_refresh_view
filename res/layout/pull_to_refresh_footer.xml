@@ -3,7 +3,8 @@
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
     android:background="#F4F4F4"
-    android:gravity="center" >
+    android:gravity="center"
+    android:padding="8dp" >
 
     <ProgressBar
         android:id="@+id/pull_to_loading_progress"
@@ -22,10 +23,9 @@
         android:layout_toRightOf="@id/pull_to_loading_progress"
         android:gravity="center"
         android:paddingTop="5dip"
-        android:text="@string/pull_to_refresh_load_label"
+        android:text="@string/load_mode_label"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textColor="@android:color/darker_gray"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textSize="18sp" />
 
 </RelativeLayout>
