@@ -52,7 +52,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.uit.pullrefresh.R;
-import com.uit.pullrefresh.listener.OnLoadMoreListener;
+import com.uit.pullrefresh.listener.OnLoadListener;
 import com.uit.pullrefresh.listener.OnPullRefreshListener;
 
 import java.text.SimpleDateFormat;
@@ -86,7 +86,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     /**
      * 滑动到底部则自动加载的监听器
      */
-    protected OnLoadMoreListener mLoadMoreListener;
+    protected OnLoadListener mLoadMoreListener;
 
     /**
      * LayoutInflater
@@ -478,7 +478,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     /**
      * @param listener
      */
-    public void setOnLoadMoreListener(OnLoadMoreListener listener) {
+    public void setOnLoadMoreListener(OnLoadListener listener) {
         mLoadMoreListener = listener;
     }
 

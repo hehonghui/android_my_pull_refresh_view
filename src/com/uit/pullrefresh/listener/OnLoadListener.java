@@ -35,6 +35,6 @@ package com.uit.pullrefresh.listener;
 /**
  * @author mrsimple
  */
-public interface OnLoadMoreListener {
+public interface OnLoadListener {
     public void onLoadMore();
 }

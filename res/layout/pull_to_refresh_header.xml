@@ -11,8 +11,7 @@
         style="@android:style/Widget.ProgressBar.Small.Inverse"
         android:layout_width="wrap_content"
         android:layout_height="30dp"
-        android:layout_centerVertical="true"
-        android:layout_marginLeft="30dip"
+        android:layout_marginLeft="80dip"
         android:layout_marginRight="20dip"
         android:indeterminate="true"
         android:visibility="gone" />
@@ -22,7 +21,7 @@
         android:layout_width="wrap_content"
         android:layout_height="30dp"
         android:layout_gravity="center"
-        android:layout_marginLeft="30dip"
+        android:layout_marginLeft="80dip"
         android:layout_marginRight="20dip"
         android:contentDescription="@string/pull_to_refresh_pull_label"
         android:gravity="center"

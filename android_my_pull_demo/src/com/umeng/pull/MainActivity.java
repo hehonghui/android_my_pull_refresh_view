@@ -34,15 +34,15 @@ package com.umeng.pull;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.view.ViewStub;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import com.uit.pullrefresh.base.impl.PullRefreshListView;
 import com.uit.pullrefresh.base.impl.PullRefreshTextView;
-import com.uit.pullrefresh.listener.OnLoadMoreListener;
+import com.uit.pullrefresh.listener.OnLoadListener;
 import com.uit.pullrefresh.listener.OnPullRefreshListener;
+import com.uit.pullrefresh.scroller.RefreshLayoutBase;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
             }
         });
         // 上拉自动加载
-        mPullRefreshListView.setOnLoadMoreListener(new OnLoadMoreListener() {
+        mPullRefreshListView.setOnLoadMoreListener(new OnLoadListener() {
 
             @Override
             public void onLoadMore() {
@@ -104,7 +104,7 @@ public class MainActivity extends Activity {
             }
         });
 
-         setContentView(mPullRefreshListView);
+        // setContentView(mPullRefreshListView);
 
         // setContentView(R.layout.umeng_comm_pull_to_refresh_header);
 
@@ -128,7 +128,7 @@ public class MainActivity extends Activity {
         });
 
         // 上拉自动加载, TextView不能设置scroll listener ，所以无效
-        pullRefreshTextView.setOnLoadMoreListener(new OnLoadMoreListener() {
+        pullRefreshTextView.setOnLoadMoreListener(new OnLoadListener() {
 
             @Override
             public void onLoadMore() {
@@ -145,6 +145,25 @@ public class MainActivity extends Activity {
 
         // setContentView(pullRefreshTextView);
 
-    }
+        RefreshLayoutBase refreshLayout = new RefreshLayoutBase(this);
+        refreshLayout.setOnRefreshListener(new OnPullRefreshListener() {
 
+            @Override
+            public void onRefresh() {
+                Toast.makeText(getApplicationContext(), "refreshing", Toast.LENGTH_SHORT)
+                        .show();
+            }
+        });
+
+        refreshLayout.setOnLoadListener(new OnLoadListener() {
+
+            @Override
+            public void onLoadMore() {
+                Toast.makeText(getApplicationContext(), "loading", Toast.LENGTH_SHORT)
+                        .show();
+            }
+        });
+        setContentView( refreshLayout );
+
+    }
 }
