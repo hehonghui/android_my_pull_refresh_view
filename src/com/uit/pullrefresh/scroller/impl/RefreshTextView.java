@@ -57,8 +57,8 @@ public class RefreshTextView extends RefreshLayoutBase<TextView> {
     }
 
     @Override
-    protected void setupContentView() {
-        mContentView = new TextView(getContext());
+    protected void setupContentView(Context context) {
+        mContentView = new TextView(context);
         // 开启可点击,使得onTouchEvent在处理触摸事件时返回true
         mContentView.setClickable(true);
     }

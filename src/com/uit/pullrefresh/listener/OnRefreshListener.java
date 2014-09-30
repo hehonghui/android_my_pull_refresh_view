@@ -35,6 +35,6 @@ package com.uit.pullrefresh.listener;
 /**
  * @author mrsimple
  */
-public interface OnPullRefreshListener {
+public interface OnRefreshListener {
     public void onRefresh();
 }

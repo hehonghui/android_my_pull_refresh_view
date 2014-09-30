@@ -41,13 +41,10 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.example.pull.R;
 import com.uit.pullrefresh.base.impl.PullRefreshListView;
 import com.uit.pullrefresh.base.impl.PullRefreshTextView;
 import com.uit.pullrefresh.listener.OnLoadListener;
-import com.uit.pullrefresh.listener.OnPullRefreshListener;
-import com.uit.pullrefresh.scroller.impl.RefreshGridView;
-import com.uit.pullrefresh.scroller.impl.RefreshListView;
+import com.uit.pullrefresh.listener.OnRefreshListener;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -81,7 +78,7 @@ public class MainActivity extends Activity {
                 datas));
 
         // 下拉刷新
-        mPullRefreshListView.setOnRefreshListener(new OnPullRefreshListener() {
+        mPullRefreshListView.setOnRefreshListener(new OnRefreshListener() {
 
             @Override
             public void onRefresh() {
@@ -120,7 +117,7 @@ public class MainActivity extends Activity {
         final PullRefreshTextView pullRefreshTextView = new PullRefreshTextView(this);
         pullRefreshTextView.getContentView().setText("下拉刷新TextView");
         // 下拉刷新
-        pullRefreshTextView.setOnRefreshListener(new OnPullRefreshListener() {
+        pullRefreshTextView.setOnRefreshListener(new OnRefreshListener() {
 
             @Override
             public void onRefresh() {

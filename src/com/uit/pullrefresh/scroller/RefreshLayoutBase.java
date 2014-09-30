@@ -51,7 +51,7 @@ import android.widget.TextView;
 
 import com.uit.pullrefresh.R;
 import com.uit.pullrefresh.listener.OnLoadListener;
-import com.uit.pullrefresh.listener.OnPullRefreshListener;
+import com.uit.pullrefresh.listener.OnRefreshListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -68,31 +68,31 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     protected Scroller mScroller;
 
     /**
-     * 
+     * 下拉刷新时显示的header view
      */
     protected View mHeaderView;
 
     /**
-     * 
+     * 上拉加载更多时显示的footer view
      */
     protected View mFooterView;
 
     /**
-     * 
+     * 本次触摸滑动y坐标上的偏移量
      */
     protected int mYOffset;
 
     /**
-     * 
+     * 内容视图, 即用户触摸导致下拉刷新、上拉加载的主视图. 比如ListView, GridView等.
      */
     protected T mContentView;
 
     /**
-     * 
+     * 最初的滚动位置.第一次布局时滚动header的高度的距离
      */
     protected int mInitScrollY = 0;
     /**
-     * 
+     * 最后一次触摸事件的y轴坐标
      */
     protected int mLastY = 0;
 
@@ -126,21 +126,29 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     protected int mCurrentStatus = STATUS_IDLE;
 
     /**
-     * 
+     * 下拉刷新监听器
      */
-    protected OnPullRefreshListener mOnPullRefreshListener;
+    protected OnRefreshListener mOnRefreshListener;
 
     /**
-     * 
+     * header中的箭头图标
      */
     private ImageView mArrowImageView;
-
+    /**
+     * 箭头是否向上
+     */
     private boolean isArrowUp;
-
+    /**
+     * header 中的文本标签
+     */
     private TextView mTipsTextView;
-
+    /**
+     * header中的时间标签
+     */
     private TextView mTimeTextView;
-
+    /**
+     * header中的进度条
+     */
     private ProgressBar mProgressBar;
     /**
      * 
@@ -178,22 +186,44 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     public RefreshLayoutBase(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs);
 
+        // 初始化Scroller对象
         mScroller = new Scroller(context);
 
-        //
+        // 获取屏幕高度
         mScreenHeight = context.getResources().getDisplayMetrics().heightPixels;
-
+        // header 的高度为屏幕高度的 1/4
         mHeaderHeight = mScreenHeight / 4;
 
-        //
+        // 初始化整个布局
         initLayout(context);
     }
 
     /**
+     * 初始化整个布局
+     * 
      * @param context
      */
     private final void initLayout(Context context) {
 
+        // header view
+        setupHeaderView(context);
+
+        // 设置内容视图
+        setupContentView(context);
+        // 设置布局参数
+        setDefaultContentLayoutParams();
+        //
+        addView(mContentView);
+
+        // footer view
+        setupFooterView(context);
+
+    }
+
+    /**
+     * 初始化 header view
+     */
+    protected void setupHeaderView(Context context) {
         mHeaderView = LayoutInflater.from(context).inflate(R.layout.pull_to_refresh_header, this,
                 false);
         mHeaderView
@@ -208,39 +238,27 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
         mTipsTextView = (TextView) mHeaderView.findViewById(R.id.pull_to_refresh_text);
         mTimeTextView = (TextView) mHeaderView.findViewById(R.id.pull_to_refresh_updated_at);
         mProgressBar = (ProgressBar) mHeaderView.findViewById(R.id.pull_to_refresh_progress);
-
-        // 设置内容视图
-        setupContentView();
-        // 设置布局参数
-        setDefaultContentLayoutParams();
-        //
-        addView(mContentView);
-
-        //
-        // mFooterView = new TextView(context);
-        // mFooterView.setText("footer");
-        // mFooterView.setBackgroundColor(Color.CYAN);
-        // mFooterView.setTextSize(30f);
-        // mFooterView.setLayoutParams(new
-        // ViewGroup.LayoutParams(LayoutParams.MATCH_PARENT, 80));
-        // mFooterView.setGravity(Gravity.CENTER);
-
-        /**
-         * 
-         */
-        mFooterView = LayoutInflater.from(getContext()).inflate(R.layout.pull_to_refresh_footer,
-                this, false);
-        addView(mFooterView);
-
     }
 
     /**
-     * 
+     * 初始化Content View, 子类覆写.
      */
-    protected abstract void setupContentView();
+    protected abstract void setupContentView(Context context);
 
     /**
-     * 
+     * 初始化footer view
+     */
+    protected void setupFooterView(Context context) {
+        /**
+         * 
+         */
+        mFooterView = LayoutInflater.from(context).inflate(R.layout.pull_to_refresh_footer,
+                this, false);
+        addView(mFooterView);
+    }
+
+    /**
+     * 设置Content View的默认布局参数
      */
     protected void setDefaultContentLayoutParams() {
         ViewGroup.LayoutParams params =
@@ -250,7 +268,8 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
-     * 
+     * 与Scroller合作,实现平滑滚动。在该方法中调用Scroller的computeScrollOffset来判断滚动是否结束。如果没有结束，
+     * 那么滚动到相应的位置，并且调用postInvalidate方法重绘界面，从而再次进入到这个computeScroll流程，直到滚动结束。
      */
     @Override
     public void computeScroll() {
@@ -303,31 +322,18 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
+     * 是否已经到了最顶部,子类需覆写该方法,使得mContentView滑动到最顶端时返回true, 如果到达最顶端用户继续下拉则拦截事件;
+     * 
      * @return
      */
-    // protected boolean isTop() {
-    // // Log.d(VIEW_LOG_TAG,
-    // // "### first pos = " + contentView.getFirstVisiblePosition()
-    // // + ", getScrollY= " + getScrollY());
-    // return mContentView.getFirstVisiblePosition() == 0
-    // && getScrollY() <= mHeaderView.getMeasuredHeight();
-    // }
-
     protected abstract boolean isTop();
 
+    /**
+     * 是否已经到了最底部,子类需覆写该方法,使得mContentView滑动到最底端时返回true;从而触发自动加载更多的操作
+     * 
+     * @return
+     */
     protected abstract boolean isBottom();
-
-    // /**
-    // * @return
-    // */
-    // protected boolean isBottom() {
-    // // Log.d(VIEW_LOG_TAG, "### last position = " +
-    // // contentView.getLastVisiblePosition()
-    // // + ", count = " + contentView.getAdapter().getCount());
-    // return mContentView != null
-    // && mContentView.getLastVisiblePosition() ==
-    // mContentView.getAdapter().getCount() - 1;
-    // }
 
     /**
      * 显示footer view
@@ -338,6 +344,8 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
+     * 设置滚动的参数
+     * 
      * @param yOffset
      */
     private void startScroll(int yOffset) {
@@ -361,7 +369,6 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
             case MotionEvent.ACTION_MOVE:
                 int currentY = (int) event.getRawY();
                 mYOffset = currentY - mLastY;
-                // Log.d(VIEW_LOG_TAG, "### distance = " + mYOffset);
                 if (mCurrentStatus != STATUS_LOADING) {
                     //
                     changeScrollY(mYOffset);
@@ -449,7 +456,7 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
-     * 
+     * 根据当前状态修改header view中的文本标签
      */
     private void changeTips() {
         if (mCurrentStatus == STATUS_PULL_TO_REFRESH) {
@@ -460,13 +467,17 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
+     * 设置下拉刷新监听器
+     * 
      * @param listener
      */
-    public void setOnRefreshListener(OnPullRefreshListener listener) {
-        mOnPullRefreshListener = listener;
+    public void setOnRefreshListener(OnRefreshListener listener) {
+        mOnRefreshListener = listener;
     }
 
     /**
+     * 设置滑动到底部时自动加载更多的监听器
+     * 
      * @param listener
      */
     public void setOnLoadListener(OnLoadListener listener) {
@@ -474,14 +485,14 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
-     * 
+     * 刷新结束，恢复状态
      */
     public void refreshComplete() {
         mCurrentStatus = STATUS_IDLE;
 
         mScroller.startScroll(getScrollX(), getScrollY(), 0, mInitScrollY - getScrollY());
         invalidate();
-        updateTimeStamp();
+        updateHeaderTimeStamp();
 
         // 200毫秒后处理arrow和progressbar,免得太突兀
         this.postDelayed(new Runnable() {
@@ -496,7 +507,7 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
-     * 
+     * 加载结束，恢复状态
      */
     public void loadCompelte() {
         // 隐藏footer
@@ -505,18 +516,16 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
-     * 
+     * 手指抬起时,根据用户下拉的高度来判断是否是有效的下拉刷新操作。如果下拉的距离超过header view的
+     * 1/2那么则认为是有效的下拉刷新操作，否则恢复原来的视图状态.
      */
-    private void refreshingHeader() {
+    private void changeHeaderViewStaus() {
         int curScrollY = getScrollY();
         // 超过1/2则认为是有效的下拉刷新, 否则还原
         if (curScrollY < mInitScrollY / 2) {
             mScroller.startScroll(getScrollX(), curScrollY, 0, mHeaderView.getPaddingTop()
                     - curScrollY);
             mCurrentStatus = STATUS_REFRESHING;
-            if (mOnPullRefreshListener != null) {
-                mOnPullRefreshListener.onRefresh();
-            }
             mTipsTextView.setText(R.string.pull_to_refresh_refreshing_label);
             mArrowImageView.clearAnimation();
             mArrowImageView.setVisibility(View.GONE);
@@ -530,14 +539,18 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
-     * 
+     * 执行下拉刷新
      */
     private void doRefresh() {
-        refreshingHeader();
+        changeHeaderViewStaus();
+        // 执行刷新操作
+        if (mCurrentStatus == STATUS_REFRESHING && mOnRefreshListener != null) {
+            mOnRefreshListener.onRefresh();
+        }
     }
 
     /**
-     * 
+     * 执行下拉(自动)加载更多的操作
      */
     private void doLoadMore() {
         if (mLoadListener != null) {
@@ -546,9 +559,9 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
-     * 
+     * 修改header上的最近更新时间
      */
-    private void updateTimeStamp() {
+    private void updateHeaderTimeStamp() {
         // 设置更新时间
         mTimeTextView.setText(R.string.pull_to_refresh_update_time_label);
         SimpleDateFormat sdf = (SimpleDateFormat) SimpleDateFormat.getInstance();
@@ -557,6 +570,8 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
+     * 返回Content View
+     * 
      * @return
      */
     public T getContentView() {
@@ -577,6 +592,10 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
         return mFooterView;
     }
 
+    /*
+     * 丈量视图的宽、高。宽度为用户设置的宽度，高度则为header, content view, footer这三个子控件的高度只和。
+     * @see android.view.View#onMeasure(int, int)
+     */
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 
@@ -590,13 +609,19 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
             View child = getChildAt(i);
             // measure
             measureChild(child, widthMeasureSpec, heightMeasureSpec);
-            //
+            // 该view所需要的总高度
             finalHeight += child.getMeasuredHeight();
         }
 
         setMeasuredDimension(width, finalHeight);
     }
 
+    /*
+     * 布局函数，将header, content view,
+     * footer这三个view从上到下布局。布局完成后通过Scroller滚动到header的底部，即滚动距离为header的高度 +
+     * 本视图的paddingTop，从而达到隐藏header的效果.
+     * @see android.view.ViewGroup#onLayout(boolean, int, int, int, int)
+     */
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
 
@@ -608,9 +633,9 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
             top += child.getMeasuredHeight();
         }
 
-        //
+        // 计算初始化滑动的y轴距离
         mInitScrollY = mHeaderView.getMeasuredHeight() + getPaddingTop();
-        //
+        // 滑动到header view高度的位置, 从而达到隐藏header view的效果
         scrollTo(0, mInitScrollY);
     }
 
@@ -619,10 +644,15 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
 
     }
 
+    /*
+     * 滚动监听，当滚动到最底部，且用户设置了加载更多的监听器时触发加载更多操作.
+     * @see android.widget.AbsListView.OnScrollListener#onScroll(android.widget.
+     * AbsListView, int, int, int)
+     */
     @Override
     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
             int totalItemCount) {
-        Log.d(VIEW_LOG_TAG, "### onScrollChanged ");
+        // 用户设置了加载更多监听器，且到了最底部，并且是上拉操作，那么执行加载更多.
         if (mLoadListener != null && isBottom() && mScroller.getCurrY() <= mInitScrollY
                 && mYOffset <= 0
                 && mCurrentStatus == STATUS_IDLE) {

@@ -57,8 +57,8 @@ public class RefreshGridView extends RefreshLayoutBase<GridView> {
     }
 
     @Override
-    protected void setupContentView() {
-        mContentView = new GridView(getContext());
+    protected void setupContentView(Context context) {
+        mContentView = new GridView(context);
         mContentView.setNumColumns(4);
         mContentView.setHorizontalSpacing(8);
         mContentView.setVerticalSpacing(8);
@@ -76,7 +76,7 @@ public class RefreshGridView extends RefreshLayoutBase<GridView> {
     protected boolean isBottom() {
         return mContentView != null && mContentView.getAdapter() != null
                 && mContentView.getLastVisiblePosition() ==
-                mContentView.getAdapter().getCount() - 1 && mYOffset < 0 ;
+                mContentView.getAdapter().getCount() - 1 && mYOffset < 0;
     }
 
 }

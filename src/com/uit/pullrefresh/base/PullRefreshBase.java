@@ -53,7 +53,7 @@ import android.widget.TextView;
 
 import com.uit.pullrefresh.R;
 import com.uit.pullrefresh.listener.OnLoadListener;
-import com.uit.pullrefresh.listener.OnPullRefreshListener;
+import com.uit.pullrefresh.listener.OnRefreshListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -82,7 +82,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     /**
      * 下拉刷新监听器
      */
-    protected OnPullRefreshListener mPullRefreshListener;
+    protected OnRefreshListener mPullRefreshListener;
     /**
      * 滑动到底部则自动加载的监听器
      */
@@ -471,7 +471,7 @@ public abstract class PullRefreshBase<T extends View> extends LinearLayout imple
     /**
      * @param listener
      */
-    public void setOnRefreshListener(OnPullRefreshListener listener) {
+    public void setOnRefreshListener(OnRefreshListener listener) {
         mPullRefreshListener = listener;
     }
 

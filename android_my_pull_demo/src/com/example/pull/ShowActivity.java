@@ -41,7 +41,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.uit.pullrefresh.listener.OnLoadListener;
-import com.uit.pullrefresh.listener.OnPullRefreshListener;
+import com.uit.pullrefresh.listener.OnRefreshListener;
 import com.uit.pullrefresh.scroller.impl.RefreshGridView;
 import com.uit.pullrefresh.scroller.impl.RefreshListView;
 import com.uit.pullrefresh.scroller.impl.RefreshTextView;
@@ -97,7 +97,7 @@ public class ShowActivity extends Activity {
         refreshLayout.getContentView().setAdapter(new ArrayAdapter<String>(this,
                 android.R.layout.simple_list_item_1, dataStrings));
         // 设置下拉刷新监听器
-        refreshLayout.setOnRefreshListener(new OnPullRefreshListener() {
+        refreshLayout.setOnRefreshListener(new OnRefreshListener() {
 
             @Override
             public void onRefresh() {
@@ -150,7 +150,7 @@ public class ShowActivity extends Activity {
         gv.getContentView().setAdapter(new ArrayAdapter<String>(this,
                 android.R.layout.simple_list_item_1, dataStrings));
         //
-        gv.setOnRefreshListener(new OnPullRefreshListener() {
+        gv.setOnRefreshListener(new OnRefreshListener() {
 
             @Override
             public void onRefresh() {
@@ -200,7 +200,7 @@ public class ShowActivity extends Activity {
         tv.setGravity(Gravity.CENTER);
         tv.setTextSize(30f);
         tv.setBackgroundColor(Color.YELLOW);
-        refreshTextView.setOnRefreshListener(new OnPullRefreshListener() {
+        refreshTextView.setOnRefreshListener(new OnRefreshListener() {
 
             @Override
             public void onRefresh() {

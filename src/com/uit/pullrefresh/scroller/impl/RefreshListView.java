@@ -68,8 +68,8 @@ public class RefreshListView extends RefreshLayoutBase<ListView> {
     }
 
     @Override
-    protected void setupContentView() {
-        mContentView = new ListView(getContext());
+    protected void setupContentView(Context context) {
+        mContentView = new ListView(context);
         // 设置滚动监听器
         mContentView.setOnScrollListener(this);
 
