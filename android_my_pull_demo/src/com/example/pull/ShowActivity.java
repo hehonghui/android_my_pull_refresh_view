@@ -94,7 +94,7 @@ public class ShowActivity extends Activity {
                     i;
         }
         // 获取ListView, 这里的listview就是Content view
-        refreshLayout.getContentView().setAdapter(new ArrayAdapter<String>(this,
+        refreshLayout.setAdapter(new ArrayAdapter<String>(this,
                 android.R.layout.simple_list_item_1, dataStrings));
         // 设置下拉刷新监听器
         refreshLayout.setOnRefreshListener(new OnRefreshListener() {
@@ -147,7 +147,7 @@ public class ShowActivity extends Activity {
             dataStrings[i] = "item - " +
                     i;
         }
-        gv.getContentView().setAdapter(new ArrayAdapter<String>(this,
+        gv.setAdapter(new ArrayAdapter<String>(this,
                 android.R.layout.simple_list_item_1, dataStrings));
         //
         gv.setOnRefreshListener(new OnRefreshListener() {

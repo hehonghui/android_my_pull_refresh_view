@@ -36,9 +36,13 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.widget.GridView;
 
+import com.uit.pullrefresh.scroller.RefreshAdaterView;
 import com.uit.pullrefresh.scroller.RefreshLayoutBase;
 
-public class RefreshGridView extends RefreshLayoutBase<GridView> {
+/**
+ * @author mrsimple
+ */
+public class RefreshGridView extends RefreshAdaterView<GridView> {
 
     public RefreshGridView(Context context) {
         this(context, null);
