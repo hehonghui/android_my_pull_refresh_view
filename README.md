@@ -4,7 +4,7 @@ android_my_pull_refresh_view
 > 这是一个通用的下拉刷新、上拉自动加载的组件，该组件继承自LinearLayout,方向为竖直布局，由三部分组成，分别是Header、ContentView、Foooter,其中ContentView的宽高都为match_parent,footer和header的宽、高分别为match_parent、wrap_content，在Header、Foooter初始时都会通过设置padding隐藏掉，只有
 ContentView区域显示出来。当用户下拉到顶端，并且继续下拉时触发下拉刷新操作；当用户上拉到底部，
 >  并且继续上拉时触发加载更多的操作。     
-
+	更多内容请参考我的博客, <a href="http://blog.csdn.net/bboyfeiyu/article/details/39718861" target="_blank">CSDN博客</a>
    
 ##一、布局示意图
 **原始布局**     

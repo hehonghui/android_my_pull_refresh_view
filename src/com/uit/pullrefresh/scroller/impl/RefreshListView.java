@@ -37,7 +37,6 @@ import android.util.AttributeSet;
 import android.widget.ListView;
 
 import com.uit.pullrefresh.scroller.RefreshAdaterView;
-import com.uit.pullrefresh.scroller.RefreshLayoutBase;
 
 /**
  * @author mrsimple
