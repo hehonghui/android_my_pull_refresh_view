@@ -395,7 +395,7 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
      * @param distance
      * @return
      */
-    private void changeScrollY(int distance) {
+    protected void changeScrollY(int distance) {
         // 最大值为 scrollY(header 隐藏), 最小值为0 ( header 完全显示).
         int curY = getScrollY();
         // 下拉
@@ -419,7 +419,7 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     /**
      * 旋转箭头图标
      */
-    private void rotateHeaderArrow() {
+    protected void rotateHeaderArrow() {
 
         if (mCurrentStatus == STATUS_REFRESHING) {
             return;
@@ -458,7 +458,7 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     /**
      * 根据当前状态修改header view中的文本标签
      */
-    private void changeTips() {
+    protected void changeTips() {
         if (mCurrentStatus == STATUS_PULL_TO_REFRESH) {
             mTipsTextView.setText(R.string.pull_to_refresh_pull_label);
         } else if (mCurrentStatus == STATUS_RELEASE_TO_REFRESH) {
@@ -541,7 +541,7 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     /**
      * 执行下拉刷新
      */
-    private void doRefresh() {
+    protected void doRefresh() {
         changeHeaderViewStaus();
         // 执行刷新操作
         if (mCurrentStatus == STATUS_REFRESHING && mOnRefreshListener != null) {
@@ -552,7 +552,7 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     /**
      * 执行下拉(自动)加载更多的操作
      */
-    private void doLoadMore() {
+    protected void doLoadMore() {
         if (mLoadListener != null) {
             mLoadListener.onLoadMore();
         }

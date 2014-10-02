@@ -36,18 +36,27 @@ import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.uit.commons.CommonAdapter;
+import com.uit.commons.CommonViewHolder;
+import com.uit.commons.utils.ViewFinder;
 import com.uit.pullrefresh.listener.OnLoadListener;
 import com.uit.pullrefresh.listener.OnRefreshListener;
 import com.uit.pullrefresh.scroller.impl.RefreshGridView;
 import com.uit.pullrefresh.scroller.impl.RefreshListView;
+import com.uit.pullrefresh.scroller.impl.RefreshSlideDeleteListView;
 import com.uit.pullrefresh.scroller.impl.RefreshTextView;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author mrsimple
@@ -57,6 +66,7 @@ public class ShowActivity extends Activity {
     public static final int REFRESH_LV = 1;
     public static final int REFRESH_GV = 2;
     public static final int REFRESH_TV = 3;
+    public static final int REFRESH_SLIDE_LV = 4;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +87,9 @@ public class ShowActivity extends Activity {
                 break;
             case REFRESH_TV:
                 setTextView();
+                break;
+            case REFRESH_SLIDE_LV:
+                setSlideListView();
                 break;
             default:
                 break;
@@ -219,5 +232,65 @@ public class ShowActivity extends Activity {
         });
         //
         setContentView(refreshTextView);
+    }
+
+    //
+    final List<String> dataStrings = new ArrayList<String>();
+
+    // 适配器
+    final BaseAdapter myAdapter = new CommonAdapter<String>(this,
+            R.layout.slide_item_layout,
+            dataStrings) {
+
+        @Override
+        protected void fillItemData(CommonViewHolder viewHolder, final int
+                position,
+                String item) {
+
+            viewHolder.setTextForTextView(R.id.text_tv, item);
+            //
+            viewHolder.setOnClickListener(R.id.delete, new OnClickListener() {
+
+                @Override
+                public void onClick(View v) {
+                    //
+                    slideDeleteListView.onRemoveItem(position);
+                    dataStrings.remove(position);
+                    myAdapter.notifyDataSetChanged();
+                }
+            });
+        }
+    };
+
+    RefreshSlideDeleteListView slideDeleteListView;
+
+    /**
+     * 
+     */
+    private void setSlideListView() {
+
+        slideDeleteListView = new RefreshSlideDeleteListView(this);
+        for (int i = 0; i < 20; i++) {
+            dataStrings.add("item - " + i);
+        }
+
+        //
+        slideDeleteListView.setAdapter(myAdapter);
+        //
+        slideDeleteListView.setOnRefreshListener(new OnRefreshListener() {
+
+            @Override
+            public void onRefresh() {
+                slideDeleteListView.postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        slideDeleteListView.refreshComplete();
+                    }
+                }, 1500);
+            }
+        });
+        //
+        setContentView(slideDeleteListView);
     }
 }

@@ -4,5 +4,6 @@
     <string name="refresh_listview">listview下拉刷新</string>
     <string name="refresh_gridview">GridView下拉刷新</string>
     <string name="refresh_tv">TextView下拉刷新</string>
+    <string name="refresh_slide_lv">滑动删除下拉刷新</string>
 
 </resources>
