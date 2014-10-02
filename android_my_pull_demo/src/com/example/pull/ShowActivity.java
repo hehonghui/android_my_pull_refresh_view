@@ -45,7 +45,6 @@ import android.widget.Toast;
 
 import com.uit.commons.CommonAdapter;
 import com.uit.commons.CommonViewHolder;
-import com.uit.commons.utils.ViewFinder;
 import com.uit.pullrefresh.listener.OnLoadListener;
 import com.uit.pullrefresh.listener.OnRefreshListener;
 import com.uit.pullrefresh.scroller.impl.RefreshGridView;

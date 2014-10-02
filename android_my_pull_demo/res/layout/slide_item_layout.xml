@@ -9,15 +9,15 @@
         android:id="@+id/text_tv"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="text"
+        android:padding="6dp"
+        android:text="@string/app_name"
         android:textSize="30sp" />
 
     <Button
         android:id="@+id/delete"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
         android:gravity="center"
-        android:text="删除" />
+        android:text="@string/delete" />
 
 </LinearLayout>

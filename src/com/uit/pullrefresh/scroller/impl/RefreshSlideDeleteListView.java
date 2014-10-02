@@ -53,11 +53,25 @@ public class RefreshSlideDeleteListView extends RefreshListView {
     /**
      * 
      */
-    private View mItemScrollView;
+    private View mItemView;
     /**
      * 删除区域的宽度, 这里假设宽度为200px吧
      */
     private int mDeleteViewWidth = 200;
+
+    /**
+     * 是否在滑动中
+     */
+    private boolean isSliding = false;
+
+    /**
+     * 是否已经显示
+     */
+    private boolean isDeleteViewShowing = false;
+    /**
+     * 
+     */
+    int mItemPosition = 0;
 
     /**
      * @param context
@@ -152,11 +166,11 @@ public class RefreshSlideDeleteListView extends RefreshListView {
                 Log.d(VIEW_LOG_TAG, "### distanceX = " + mDistanceX + ", dis y = " + distanceY
                         + ", is delete showing = " + isDeleteViewShowing);
                 if (Math.abs(mDistanceX) > Math.abs(distanceY) * 2) {
-                    if (mItemScrollView == null) {
-                        mItemScrollView = getCurrentItemView(currentX, currentY);
+                    if (mItemView == null) {
+                        mItemView = getCurrentItemView(currentX, currentY);
                     }
                     slideItemView(mDistanceX);
-                } else if (!isDeleteViewShowing) {
+                } else if (!isDeleteViewShowing && isTop() && mYOffset > 0 && !isSliding) {
                     //
                     mYOffset = currentY - mLastY;
                     if (mCurrentStatus != STATUS_LOADING) {
@@ -209,10 +223,11 @@ public class RefreshSlideDeleteListView extends RefreshListView {
         }
 
         Log.d(VIEW_LOG_TAG, "### slide item view , distance x = " + distanceX);
-        Log.d(VIEW_LOG_TAG, "item view = " + mItemScrollView);
-        if (mItemScrollView != null) {
-            mItemScrollView.scrollTo(distanceX, 0);
-            mItemScrollView.invalidate();
+        Log.d(VIEW_LOG_TAG, "item view = " + mItemView);
+        if (mItemView != null) {
+            mItemView.scrollTo(distanceX, 0);
+            mItemView.invalidate();
+            isSliding = true;
         }
 
     }
@@ -220,23 +235,20 @@ public class RefreshSlideDeleteListView extends RefreshListView {
     /**
      * 
      */
-    private boolean isDeleteViewShowing = false;
-
-    /**
-     * 
-     */
     private void clearSlideState() {
-        mItemScrollView = null;
+        mItemView = null;
         isDeleteViewShowing = false;
+        isSliding = false;
         mDistanceX = 0;
+        mItemPosition = AbsListView.INVALID_POSITION;
     }
 
     /**
      * 
      */
     private void isSlideValid() {
-        if (mItemScrollView != null) {
-            if (mItemScrollView.getScrollX() > mDeleteViewWidth / 2) {
+        if (mItemView != null) {
+            if (mItemView.getScrollX() > mDeleteViewWidth / 2) {
                 slideItemView(-mDeleteViewWidth);
                 isDeleteViewShowing = true;
             } else {
@@ -256,8 +268,6 @@ public class RefreshSlideDeleteListView extends RefreshListView {
         slideItemView(0);
         clearSlideState();
     }
-
-    int mItemPosition = 0;
 
     /**
      * @param x
