@@ -183,5 +183,15 @@ public class MainActivity extends Activity {
             }
         });
 
+        findViewById(R.id.refresh_slide_lv).setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, ShowActivity.class);
+                intent.putExtra("index", ShowActivity.REFRESH_SLIDE_LV);
+                startActivity(intent);
+            }
+        });
+
     }
 }
