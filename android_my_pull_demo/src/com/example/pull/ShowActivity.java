@@ -35,11 +35,13 @@ package com.example.pull;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -51,6 +53,8 @@ import com.uit.pullrefresh.scroller.impl.RefreshGridView;
 import com.uit.pullrefresh.scroller.impl.RefreshListView;
 import com.uit.pullrefresh.scroller.impl.RefreshSlideDeleteListView;
 import com.uit.pullrefresh.scroller.impl.RefreshTextView;
+import com.uit.pullrefresh.swipe.RefreshLayout;
+import com.uit.pullrefresh.swipe.RefreshLvLayout;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -66,6 +70,10 @@ public class ShowActivity extends Activity {
     public static final int REFRESH_GV = 2;
     public static final int REFRESH_TV = 3;
     public static final int REFRESH_SLIDE_LV = 4;
+    public static final int SWIPE_LV = 5;
+
+    //
+    final List<String> dataStrings = new ArrayList<String>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +83,11 @@ public class ShowActivity extends Activity {
         Bundle extraBundle = getIntent().getExtras();
         if (extraBundle != null && extraBundle.containsKey("index")) {
             index = extraBundle.getInt("index");
+        }
+
+        // 准备数据
+        for (int i = 0; i < 20; i++) {
+            dataStrings.add("item - " + i);
         }
 
         switch (index) {
@@ -90,6 +103,9 @@ public class ShowActivity extends Activity {
             case REFRESH_SLIDE_LV:
                 setSlideListView();
                 break;
+            case SWIPE_LV:
+                setSwipeRefreshListView();
+                break;
             default:
                 break;
         }
@@ -100,11 +116,7 @@ public class ShowActivity extends Activity {
      */
     private void setListView() {
         final RefreshListView refreshLayout = new RefreshListView(this);
-        String[] dataStrings = new String[20];
-        for (int i = 0; i < dataStrings.length; i++) {
-            dataStrings[i] = "item - " +
-                    i;
-        }
+
         // 获取ListView, 这里的listview就是Content view
         refreshLayout.setAdapter(new ArrayAdapter<String>(this,
                 android.R.layout.simple_list_item_1, dataStrings));
@@ -233,9 +245,6 @@ public class ShowActivity extends Activity {
         setContentView(refreshTextView);
     }
 
-    //
-    final List<String> dataStrings = new ArrayList<String>();
-
     // 适配器
     final BaseAdapter myAdapter = new CommonAdapter<String>(this,
             R.layout.slide_item_layout,
@@ -269,9 +278,6 @@ public class ShowActivity extends Activity {
     private void setSlideListView() {
 
         slideDeleteListView = new RefreshSlideDeleteListView(this);
-        for (int i = 0; i < 20; i++) {
-            dataStrings.add("item - " + i);
-        }
 
         //
         slideDeleteListView.setAdapter(myAdapter);
@@ -291,5 +297,61 @@ public class ShowActivity extends Activity {
         });
         //
         setContentView(slideDeleteListView);
+    }
+
+    /**
+     * 
+     */
+    private void setSwipeRefreshListView() {
+        //
+        setContentView(R.layout.swipe_lv_layout);
+
+        // 注意, 这是一个ViewGroup类, 不是listview本身
+        final RefreshLvLayout refreshLayout = (RefreshLvLayout) findViewById(R.id.swipe_layout);
+        // 注意这里的是SwipeRefreshLayout.OnRefreshListener
+        refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+
+            @Override
+            public void onRefresh() {
+
+                Toast.makeText(getApplicationContext(), "on refresh ", Toast.LENGTH_SHORT).show();
+
+                // 如果没有时间消耗,那么加载效果很快消失了
+                refreshLayout.postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        // 刷新完以后调用该方法
+                        refreshLayout.setRefreshing(false);
+                    }
+                }, 1500);
+            }
+        });
+
+        // 滑动到底部再上拉则加载横多
+        refreshLayout.setOnLoadListener(new RefreshLayout.OnLoadListener() {
+
+            @Override
+            public void onLoad() {
+                Toast.makeText(getApplicationContext(), "on load ( 加载1.5秒 )", Toast.LENGTH_SHORT)
+                        .show();
+                // 如果没有时间消耗,那么加载效果很快消失了，相当于没有显示footer视图一样.
+                refreshLayout.postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        // 加载完以后调用该方法
+                        refreshLayout.setLoading(false);
+                    }
+                }, 1500);
+            }
+        });
+
+        // listview
+        final ListView listView = (ListView) findViewById(R.id.swipe_listview);
+
+        // 设置适配器
+        listView.setAdapter(new ArrayAdapter<String>(this,
+                android.R.layout.simple_list_item_1, dataStrings));
     }
 }

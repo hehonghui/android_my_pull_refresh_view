@@ -5,6 +5,7 @@
     <string name="refresh_gridview">GridView下拉刷新</string>
     <string name="refresh_tv">TextView下拉刷新</string>
     <string name="refresh_slide_lv">滑动删除下拉刷新</string>
+    <string name="swipe_layout">SwipeRefreshLayout下拉刷新</string>
     <string name="delete">删除</string>
 
 </resources>

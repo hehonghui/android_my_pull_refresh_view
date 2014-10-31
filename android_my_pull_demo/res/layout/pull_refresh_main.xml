@@ -30,4 +30,10 @@
         android:layout_height="wrap_content"
         android:text="@string/refresh_slide_lv" />
 
+    <Button
+        android:id="@+id/swipe_refresh_lv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/swipe_layout" />
+
 </LinearLayout>
