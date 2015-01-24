@@ -370,7 +370,6 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
                 int currentY = (int) event.getRawY();
                 mYOffset = currentY - mLastY;
                 if (mCurrentStatus != STATUS_LOADING) {
-                    //
                     changeScrollY(mYOffset);
                 }
 
@@ -488,9 +487,8 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
      * 刷新结束，恢复状态
      */
     public void refreshComplete() {
-        mCurrentStatus = STATUS_IDLE;
-
         mScroller.startScroll(getScrollX(), getScrollY(), 0, mInitScrollY - getScrollY());
+        mCurrentStatus = STATUS_IDLE;
         invalidate();
         updateHeaderTimeStamp();
 

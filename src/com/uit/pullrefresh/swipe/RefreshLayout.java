@@ -36,12 +36,12 @@ import android.content.Context;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
+import android.widget.ListAdapter;
 
 import com.uit.pullrefresh.R;
 
@@ -81,11 +81,6 @@ public abstract class RefreshLayout<T extends AbsListView> extends SwipeRefreshL
     private OnLoadListener mOnLoadListener;
 
     /**
-     * ListView的加载中footer
-     */
-    protected View mListViewFooter;
-
-    /**
      * 按下时的y坐标
      */
     protected int mYDown;
@@ -109,10 +104,6 @@ public abstract class RefreshLayout<T extends AbsListView> extends SwipeRefreshL
         super(context, attrs);
 
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
-
-        mListViewFooter = LayoutInflater.from(context).inflate(R.layout.pull_to_refresh_footer,
-                null,
-                false);
     }
 
     @Override
@@ -120,13 +111,8 @@ public abstract class RefreshLayout<T extends AbsListView> extends SwipeRefreshL
         super.onLayout(changed, left, top, right, bottom);
 
         // 初始化ListView对象
-        // if (mListView == null) {
-        // getRefreshView();
-        // }
-
         if (mAbsListView == null) {
             getRefreshView();
-
             // 设置颜色
             this.setColorScheme(R.color.umeng_comm_lv_header_color1,
                     R.color.umeng_comm_lv_header_color2, R.color.umeng_comm_lv_header_color3,
@@ -138,7 +124,9 @@ public abstract class RefreshLayout<T extends AbsListView> extends SwipeRefreshL
      * 获取ListView对象
      */
     @SuppressWarnings("unchecked")
-    private void getRefreshView() {
+    protected void getRefreshView() {
+
+        Log.d(VIEW_LOG_TAG, "### 构造调用");
         int childs = getChildCount();
         if (childs > 0) {
             View childView = getChildAt(0);
@@ -190,6 +178,10 @@ public abstract class RefreshLayout<T extends AbsListView> extends SwipeRefreshL
         return super.dispatchTouchEvent(event);
     }
 
+    public void setAdapter(ListAdapter adapter) {
+        mAbsListView.setAdapter(adapter);
+    }
+
     /**
      * 是否可以加载更多, 条件是到了最底部, listview不在加载中, 且为上拉操作.
      * 
@@ -203,11 +195,6 @@ public abstract class RefreshLayout<T extends AbsListView> extends SwipeRefreshL
      * 判断是否到了最底部
      */
     private boolean isBottom() {
-
-        // if (mListView != null && mListView.getAdapter() != null) {
-        // return mListView.getLastVisiblePosition() ==
-        // (mListView.getAdapter().getCount() - 1);
-        // }
         if (mAbsListView != null && mAbsListView.getAdapter() != null) {
             return mAbsListView.getLastVisiblePosition() == (mAbsListView.getAdapter().getCount() - 1);
         }
@@ -240,18 +227,6 @@ public abstract class RefreshLayout<T extends AbsListView> extends SwipeRefreshL
      */
     public void setLoading(boolean loading) {
         isLoading = loading;
-        // if (isLoading) {
-        // mListView.addFooterView(mListViewFooter);
-        // } else {
-        // if (mListView.getAdapter() instanceof HeaderViewListAdapter) {
-        // mListView.removeFooterView(mListViewFooter);
-        // } else {
-        // mListViewFooter.setVisibility(View.GONE);
-        // }
-        // mYDown = 0;
-        // mLastY = 0;
-        // }
-
     }
 
     /**
