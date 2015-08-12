@@ -57,7 +57,15 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
+ * RefreshLayoutBase是下拉刷新、上拉加载更多的抽象类。该组件含有Header、Content
+ * View、Footer三部分，并且从上到下布局。Header、Footer一般大小固定，Content
+ * View则为与屏幕一样大。在初始化时通过Scroller将Header滚出屏幕的可见区域
+ * ,当下拉时将Header慢慢移入用户的视野,用户抬起手指时判断Header的可见高度
+ * ，如果可见的高度大于Header总高度的一半，那么则触发下拉刷新操作。加载更多则是当Content
+ * View到了底部，用户还继续上拉，那么触发加载更多操作。
+ * 
  * @author mrsimple
+ * @param <T> Content View的类型,可以为任何View的子类,例如ListView、GridView等
  */
 public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implements
         OnScrollListener {
@@ -126,11 +134,6 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     protected int mCurrentStatus = STATUS_IDLE;
 
     /**
-     * 下拉刷新监听器
-     */
-    protected OnRefreshListener mOnRefreshListener;
-
-    /**
      * header中的箭头图标
      */
     private ImageView mArrowImageView;
@@ -151,15 +154,19 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
      */
     private ProgressBar mProgressBar;
     /**
-     * 
+     * 屏幕高度
      */
     private int mScreenHeight;
     /**
-     * 
+     * Header 高度
      */
     private int mHeaderHeight;
     /**
-     * 
+     * 下拉刷新监听器
+     */
+    protected OnRefreshListener mOnRefreshListener;
+    /**
+     * 加载更多回调
      */
     protected OnLoadListener mLoadListener;
 
@@ -204,17 +211,14 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
      * @param context
      */
     private final void initLayout(Context context) {
-
         // header view
         setupHeaderView(context);
-
         // 设置内容视图
         setupContentView(context);
         // 设置布局参数
         setDefaultContentLayoutParams();
-        //
+        // 添加mContentView
         addView(mContentView);
-
         // footer view
         setupFooterView(context);
 
@@ -240,18 +244,71 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
         mProgressBar = (ProgressBar) mHeaderView.findViewById(R.id.pull_to_refresh_progress);
     }
 
+    /*
+     * 丈量视图的宽、高。宽度为用户设置的宽度，高度则为header, content view, footer这三个子控件的高度只和。
+     * @see android.view.View#onMeasure(int, int)
+     */
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int width = MeasureSpec.getSize(widthMeasureSpec);
+        int childCount = getChildCount();
+        int finalHeight = 0;
+        for (int i = 0; i < childCount; i++) {
+            View child = getChildAt(i);
+            // measure
+            measureChild(child, widthMeasureSpec, heightMeasureSpec);
+            // 该view所需要的总高度
+            finalHeight += child.getMeasuredHeight();
+        }
+        setMeasuredDimension(width, finalHeight);
+    }
+
+    /*
+     * 布局函数，将header, content view,
+     * footer这三个view从上到下布局。布局完成后通过Scroller滚动到header的底部，即滚动距离为header的高度 +
+     * 本视图的paddingTop，从而达到隐藏header的效果.
+     * @see android.view.ViewGroup#onLayout(boolean, int, int, int, int)
+     */
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+
+        int childCount = getChildCount();
+        int top = getPaddingTop();
+        for (int i = 0; i < childCount; i++) {
+            View child = getChildAt(i);
+            child.layout(0, top, child.getMeasuredWidth(), child.getMeasuredHeight() + top);
+            top += child.getMeasuredHeight();
+        }
+
+        // 计算初始化滑动的y轴距离
+        mInitScrollY = mHeaderView.getMeasuredHeight() + getPaddingTop();
+        // 滑动到header view高度的位置, 从而达到隐藏header view的效果
+        scrollTo(0, mInitScrollY);
+    }
+
     /**
      * 初始化Content View, 子类覆写.
      */
     protected abstract void setupContentView(Context context);
 
     /**
+     * 是否已经到了最顶部,子类需覆写该方法,使得mContentView滑动到最顶端时返回true, 如果到达最顶端用户继续下拉则拦截事件;
+     * 
+     * @return
+     */
+    protected abstract boolean isTop();
+
+    /**
+     * 是否已经到了最底部,子类需覆写该方法,使得mContentView滑动到最底端时返回true;从而触发自动加载更多的操作
+     * 
+     * @return
+     */
+    protected abstract boolean isBottom();
+
+    /**
      * 初始化footer view
      */
     protected void setupFooterView(Context context) {
-        /**
-         * 
-         */
         mFooterView = LayoutInflater.from(context).inflate(R.layout.pull_to_refresh_footer,
                 this, false);
         addView(mFooterView);
@@ -316,41 +373,8 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
                 break;
 
         }
-
         // Do not intercept touch event, let the child handle it
         return false;
-    }
-
-    /**
-     * 是否已经到了最顶部,子类需覆写该方法,使得mContentView滑动到最顶端时返回true, 如果到达最顶端用户继续下拉则拦截事件;
-     * 
-     * @return
-     */
-    protected abstract boolean isTop();
-
-    /**
-     * 是否已经到了最底部,子类需覆写该方法,使得mContentView滑动到最底端时返回true;从而触发自动加载更多的操作
-     * 
-     * @return
-     */
-    protected abstract boolean isBottom();
-
-    /**
-     * 显示footer view
-     */
-    private void showFooterView() {
-        startScroll(mFooterView.getMeasuredHeight());
-        mCurrentStatus = STATUS_LOADING;
-    }
-
-    /**
-     * 设置滚动的参数
-     * 
-     * @param yOffset
-     */
-    private void startScroll(int yOffset) {
-        mScroller.startScroll(getScrollX(), getScrollY(), 0, yOffset);
-        invalidate();
     }
 
     /*
@@ -359,13 +383,8 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
      */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-
         Log.d(VIEW_LOG_TAG, "@@@ onTouchEvent : action = " + event.getAction());
         switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                mLastY = (int) event.getRawY();
-                break;
-
             case MotionEvent.ACTION_MOVE:
                 int currentY = (int) event.getRawY();
                 mYOffset = currentY - mLastY;
@@ -384,10 +403,18 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
                 break;
             default:
                 break;
-
         }
-
         return true;
+    }
+
+    /**
+     * 设置滚动的参数
+     * 
+     * @param yOffset
+     */
+    private void startScroll(int yOffset) {
+        mScroller.startScroll(getScrollX(), getScrollY(), 0, yOffset);
+        invalidate();
     }
 
     /**
@@ -548,15 +575,6 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
     }
 
     /**
-     * 执行下拉(自动)加载更多的操作
-     */
-    protected void doLoadMore() {
-        if (mLoadListener != null) {
-            mLoadListener.onLoadMore();
-        }
-    }
-
-    /**
      * 修改header上的最近更新时间
      */
     private void updateHeaderTimeStamp() {
@@ -590,53 +608,6 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
         return mFooterView;
     }
 
-    /*
-     * 丈量视图的宽、高。宽度为用户设置的宽度，高度则为header, content view, footer这三个子控件的高度只和。
-     * @see android.view.View#onMeasure(int, int)
-     */
-    @Override
-    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-
-        int width = MeasureSpec.getSize(widthMeasureSpec);
-
-        int childCount = getChildCount();
-
-        int finalHeight = 0;
-
-        for (int i = 0; i < childCount; i++) {
-            View child = getChildAt(i);
-            // measure
-            measureChild(child, widthMeasureSpec, heightMeasureSpec);
-            // 该view所需要的总高度
-            finalHeight += child.getMeasuredHeight();
-        }
-
-        setMeasuredDimension(width, finalHeight);
-    }
-
-    /*
-     * 布局函数，将header, content view,
-     * footer这三个view从上到下布局。布局完成后通过Scroller滚动到header的底部，即滚动距离为header的高度 +
-     * 本视图的paddingTop，从而达到隐藏header的效果.
-     * @see android.view.ViewGroup#onLayout(boolean, int, int, int, int)
-     */
-    @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-
-        int childCount = getChildCount();
-        int top = getPaddingTop();
-        for (int i = 0; i < childCount; i++) {
-            View child = getChildAt(i);
-            child.layout(0, top, child.getMeasuredWidth(), child.getMeasuredHeight() + top);
-            top += child.getMeasuredHeight();
-        }
-
-        // 计算初始化滑动的y轴距离
-        mInitScrollY = mHeaderView.getMeasuredHeight() + getPaddingTop();
-        // 滑动到header view高度的位置, 从而达到隐藏header view的效果
-        scrollTo(0, mInitScrollY);
-    }
-
     @Override
     public void onScrollStateChanged(AbsListView view, int scrollState) {
 
@@ -657,6 +628,23 @@ public abstract class RefreshLayoutBase<T extends View> extends ViewGroup implem
             showFooterView();
             doLoadMore();
         }
+    }
+
+    /**
+     * 执行下拉(自动)加载更多的操作
+     */
+    protected void doLoadMore() {
+        if (mLoadListener != null) {
+            mLoadListener.onLoadMore();
+        }
+    }
+
+    /**
+     * 显示footer view
+     */
+    private void showFooterView() {
+        startScroll(mFooterView.getMeasuredHeight());
+        mCurrentStatus = STATUS_LOADING;
     }
 
 }
