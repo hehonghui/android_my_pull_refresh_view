@@ -6,6 +6,8 @@ ContentView区域显示出来。当用户下拉到顶端，并且继续下拉时
 >  并且继续上拉时触发加载更多的操作。     
 	更多内容请参考我的博客, <a href="http://blog.csdn.net/bboyfeiyu/article/details/39718861" target="_blank">CSDN博客</a>
    
+   **该项目中的库都是用于阐述基本原理，不建议使用到项目中。**     
+   
 ##一、布局示意图
 **原始布局**     
 ![Alt text] (http://img.blog.csdn.net/20140913165858954?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)      
