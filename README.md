@@ -141,7 +141,7 @@ public class MainActivity extends Activity {
 ![Alt text] (http://img.blog.csdn.net/20140913171316628?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)
         
 ## 三、扩展该组件
-### 3.1、继承自PullRefreshBase<T>
+### 3.1、继承自PullRefreshBase<T>
 	T为你要实现下拉刷新的View的类型，如ListView.       
 	
 ### 3.2、初始化ContentView
