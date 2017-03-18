@@ -10,10 +10,10 @@ ContentView区域显示出来。当用户下拉到顶端，并且继续下拉时
    
 ##一、布局示意图
 **原始布局**     
-![Alt text] (http://img.blog.csdn.net/20140913165858954?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)      
+![Alt text](http://img.blog.csdn.net/20140913165858954?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)      
 
 **设置padding后headerh和footer偏移出屏幕**      
-![Alt text] (http://img.blog.csdn.net/20140913165828046?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)     
+![Alt text](http://img.blog.csdn.net/20140913165828046?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)     
 
 
 ## 二、已有组件的使用示例
@@ -84,10 +84,10 @@ public class MainActivity extends Activity {
 ```       
   **下拉刷新截图**   
   
-  ![Alt text] (http://img.blog.csdn.net/20140913171130673?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)      
+  ![Alt text](http://img.blog.csdn.net/20140913171130673?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)      
   
   **上拉到底部的自动加载**     
-  ![Alt text] (http://img.blog.csdn.net/20140913171130673?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)       
+  ![Alt text](http://img.blog.csdn.net/20140913171130673?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvYmJveWZlaXl1/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center)       
 
 ### 2.2 使用可下拉刷新的TextView
 ```java
